@@ -2,6 +2,17 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.5.0] - 2026-07-24
+
+### Fixed
+- **Updated model chain to Gemini 3.x**: The old 2.5-era models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-latest`, `gemini-2.5-pro`) are retired/legacy as of mid-2026. Replaced with current production models per user's confirmed quota availability:
+  1. `gemini-3.6-flash` — Primary (latest flagship)
+  2. `gemini-3.5-flash` — Fallback 1
+  3. `gemini-3.5-flash-lite` — Fallback 2 (fast, low-cost)
+  4. `gemini-3.1-pro` — Fallback 3 (last resort)
+- This resolves the persistent "free_tier_requests, limit: 0" quota errors that were caused by hitting deprecated model endpoints.
+- Deployed Web App API version 18 (`AKfycbxigVCRiRIzps1crhi171sJWPolnfPwbAD5L3h1gDV9CYRXBqZpX0_xvWQfEveyk_E`).
+
 ## [3.4.0] - 2026-07-24
 
 ### Fixed - Root cause of duplicate slippage
