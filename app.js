@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "https://script.google.com/macros/s/AKfycbwx0lJhefg9gCbkED9nm3yXaH_VhL9wZUrSHrnyTjnuMIxSxluQB-mgKnV657NvUbE/exec",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbwLmzNZh3QusKH7CSrPam2rWB0yw6ueNa-qb44dqLA7MqJOquNfcK9169e93Cb9HYs/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1841,7 +1841,7 @@ class FactVaultApp {
     }
     
     // Always bind to latest FunFacts Database Web App URL
-    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbwx0lJhefg9gCbkED9nm3yXaH_VhL9wZUrSHrnyTjnuMIxSxluQB-mgKnV657NvUbE/exec";
+    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbwLmzNZh3QusKH7CSrPam2rWB0yw6ueNa-qb44dqLA7MqJOquNfcK9169e93Cb9HYs/exec";
 
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";

@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.1.0] - 2026-07-24
+
+### Added
+- Integrated official Google Tasks API (`postToGoogleTasks`) into Apps Script backend.
+- Automatically inserts new daily fun facts as items directly into your Google Tasks app under the `FunFacts` task list.
+- Deployed Web App API version 4 (`AKfycbwLmzNZh3QusKH7CSrPam2rWB0yw6ueNa-qb44dqLA7MqJOquNfcK9169e93Cb9HYs`) and updated `app.js`.
+
 ## [2.0.0] - 2026-07-24
 
 ### Added

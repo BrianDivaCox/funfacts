@@ -420,7 +420,51 @@ function saveFactToSheet(factObj) {
 }
 
 /**
- * Post Fact to Google Keep "FunFacts" Note / List
+ * Direct Google Tasks Integration
+ * Automatically creates a new Task in your Google Tasks App under "FunFacts" list!
+ */
+function postToGoogleTasks(factText, category) {
+  let cleanFact = factText.trim();
+  if (!cleanFact.toLowerCase().includes("#funfact")) {
+    cleanFact += " #funfact";
+  }
+
+  try {
+    let taskListId = "@default";
+    try {
+      const taskLists = Tasks.Tasklists.list();
+      if (taskLists && taskLists.items) {
+        for (let i = 0; i < taskLists.items.length; i++) {
+          if (taskLists.items[i].title.toLowerCase() === "funfacts") {
+            taskListId = taskLists.items[i].id;
+            break;
+          }
+        }
+        if (taskListId === "@default") {
+          const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
+          taskListId = newList.id;
+        }
+      }
+    } catch (e) {
+      Logger.log("Tasklist lookup fallback to default list: " + e.message);
+    }
+
+    const taskObj = {
+      title: cleanFact,
+      notes: `Category: #${category || "Trivia"} | Added by FactVault AI`
+    };
+    
+    const createdTask = Tasks.Tasks.insert(taskObj, taskListId);
+    Logger.log("Successfully created Google Task: " + createdTask.id);
+    return { success: true, taskId: createdTask.id, title: cleanFact };
+  } catch (err) {
+    Logger.log("Google Tasks API Notice: " + err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Post Fact to Google Keep & Google Tasks App
  */
 function postToGoogleKeep(factText, category) {
   const dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
@@ -431,11 +475,14 @@ function postToGoogleKeep(factText, category) {
     cleanFact += " #funfact";
   }
 
+  // 1. Automatically push to Google Tasks App!
+  const taskResult = postToGoogleTasks(cleanFact, category);
+
+  // 2. Format note content for Keep / Mail backup
   const formattedNoteContent = 
     `📌 FunFacts List - ${dateStr}\n` +
     `${cleanFact}`;
 
-  // Sync draft / note copy to Gmail / Keep list pipeline
   try {
     const userEmail = Session.getActiveUser().getEmail();
     if (userEmail) {
@@ -449,6 +496,7 @@ function postToGoogleKeep(factText, category) {
     success: true,
     noteTitle: "FunFacts",
     noteContent: formattedNoteContent,
+    taskCreated: taskResult.success,
     keepNoteId: "KEEP-" + Date.now()
   };
 }
