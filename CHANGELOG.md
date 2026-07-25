@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.3.0] - 2026-07-24
+
+### Added
+- Added API key format check (`AIzaSy...`) in `generateUniqueFactWithGemini` in Apps Script backend.
+- Friendly HTTP 400 error message parser for invalid API key format.
+- Deployed Web App API version 6 (`AKfycbwYOzHHginojRwC_hV18w9xw7eRWIAqes8P8dfkiqiezh4grX9i5RsvJb7W5HFso-0`) and updated `app.js`.
+
 ## [2.2.0] - 2026-07-24
 
 ### Added

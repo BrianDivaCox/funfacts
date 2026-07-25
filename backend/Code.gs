@@ -292,9 +292,13 @@ function calculateJaccardOverlap(arr1, arr2) {
  * Gemini API Integration to generate a non-duplicate fact
  */
 function generateUniqueFactWithGemini(providedApiKey) {
-  const apiKey = providedApiKey || getSetting("GEMINI_API_KEY");
+  const apiKey = (providedApiKey || getSetting("GEMINI_API_KEY") || "").trim();
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured in Settings.");
+    throw new Error("Gemini API key is missing. Please open the Settings tab and paste your API key in cell B2.");
+  }
+
+  if (!apiKey.startsWith("AIzaSy")) {
+    throw new Error(`The key in cell B2 starts with '${apiKey.substring(0, 7)}...', which is not a valid Gemini API Key.\n\nGemini API keys MUST start with 'AIzaSy...'.\nGet a free key at: https://aistudio.google.com/app/apikey`);
   }
 
   const existingFacts = getAllFacts();
@@ -346,7 +350,14 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
 
     const responseCode = response.getResponseCode();
     if (responseCode !== 200) {
-      throw new Error(`Gemini API Error (${responseCode}): ${response.getContentText()}`);
+      let errDetail = response.getContentText();
+      try {
+        const errObj = JSON.parse(errDetail);
+        if (errObj.error && errObj.error.message) {
+          errDetail = errObj.error.message;
+        }
+      } catch (e) {}
+      throw new Error(`Gemini API Error (HTTP ${responseCode}): ${errDetail}`);
     }
 
     const resData = JSON.parse(response.getContentText());
