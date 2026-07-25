@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FactVault AI | Daily Fun Fact & Duplicate Prevention Tracker</title>
+  <meta name="description" content="AI-powered Daily Fun Fact Tracker with Gemini integration, Duplicate Prevention Engine, and Google Keep syncing.">
+  <!-- Modern Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">🧠</div>
+        <div class="logo-text">
+          <h1>FactVault AI</h1>
+          <p>Daily Fun Fact Tracker & Duplicate Prevention System</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status-pill" id="systemStatusPill">
+          <span class="status-dot"></span>
+          <span id="statusText">Local Storage Mode</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="syncBtn">🔄 Sync API</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="tab-btn" data-tab="factLog">📜 Fact Log & History</button>
+      <button class="tab-btn" data-tab="dupChecker">🔍 Duplicate Checker</button>
+      <button class="tab-btn" data-tab="generator">⚡ Gemini Generator</button>
+      <button class="tab-btn" data-tab="settings">⚙️ Settings & Automation</button>
+    </nav>
+
+    <!-- TAB 1: DASHBOARD -->
+    <main id="dashboard" class="tab-content active">
+      
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">📌</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statTotalFacts">0</div>
+            <div class="stat-label">Total Facts Tracked</div>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🛡️</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statUniquenessRate">100%</div>
+            <div class="stat-label">Uniqueness Rate</div>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">🔥</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statStreak">0 Days</div>
+            <div class="stat-label">Daily Posting Streak</div>
+          </div>
+        </div>
+
+        <div class="glass-card stat-card">
+          <div class="stat-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">🎯</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statTopCategory">Science</div>
+            <div class="stat-label">Top Category</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Banner -->
+      <div class="glass-card" style="margin-bottom: 28px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15)); border-color: rgba(99, 102, 241, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h3 style="font-size: 1.1rem; margin-bottom: 4px;">⏰ Next Fact Scheduled for Midnight</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Automated trigger generates a novel fact, checks past history, and creates a Google Keep note.</p>
+          </div>
+          <button class="btn btn-primary" id="dashGenerateQuickBtn">⚡ Generate Now with Gemini</button>
+        </div>
+      </div>
+
+      <!-- Recent Activity Feed -->
+      <div class="glass-card">
+        <div class="section-header">
+          <h2 class="section-title">🕒 Recent Fun Facts Logged</h2>
+          <button class="btn btn-secondary btn-sm" id="viewAllFactsBtn">View All</button>
+        </div>
+        <div id="dashboardRecentGrid" class="fact-grid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+    </main>
+
+    <!-- TAB 2: FACT LOG & HISTORY -->
+    <section id="factLog" class="tab-content">
+      <div class="glass-card">
+        <div class="section-header">
+          <h2 class="section-title">📜 Fact History Database</h2>
+          <button class="btn btn-primary btn-sm" id="addManualFactBtn">+ Add Manual Fact</button>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search facts by keyword, topic, text...">
+          </div>
+          <select id="categoryFilter" class="select-filter">
+            <option value="ALL">All Categories</option>
+            <option value="Science">Science</option>
+            <option value="History">History</option>
+            <option value="Space">Space</option>
+            <option value="Animals">Animals</option>
+            <option value="Nature">Nature</option>
+            <option value="Pop Culture">Pop Culture</option>
+            <option value="Tech">Tech</option>
+            <option value="General">General</option>
+          </select>
+          <select id="statusFilter" class="select-filter">
+            <option value="ALL">All Statuses</option>
+            <option value="Used">Used</option>
+            <option value="Queued">Queued</option>
+            <option value="Posted">Posted to Keep</option>
+          </select>
+        </div>
+
+        <!-- Fact Cards Container -->
+        <div id="fullFactGrid" class="fact-grid">
+          <!-- Populated by JavaScript -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: DUPLICATE CHECKER SANDBOX -->
+    <section id="dupChecker" class="tab-content">
+      <div class="glass-card">
+        <div class="section-header">
+          <h2 class="section-title">🔍 Duplicate & Similarity Analyzer</h2>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">
+          Test any proposed fun fact candidate against all recorded history using Levenshtein edit distance, keyword overlap algorithms, and exact string matching.
+        </p>
+
+        <div class="sandbox-layout">
+          <div>
+            <div class="form-group">
+              <label class="form-label" for="checkerInput">Fun Fact Candidate Text</label>
+              <textarea id="checkerInput" class="form-textarea" placeholder="Paste or type a fact to check if it's already used or semantically similar..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="runCheckBtn" style="width: 100%;">⚡ Analyze Uniqueness</button>
+          </div>
+
+          <div>
+            <div class="score-meter-wrap" id="scoreMeterBox">
+              <div class="score-number text-success" id="meterScore">0%</div>
+              <div class="score-status text-success" id="meterStatus">Ready for Analysis</div>
+              <p id="meterDetails" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">Enter text and click analyze.</p>
+            </div>
+
+            <div class="analysis-breakdown" id="analysisBreakdown">
+              <div class="breakdown-row">
+                <span>Exact Match Check:</span>
+                <strong id="chkExact">--</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Text Similarity (Levenshtein):</span>
+                <strong id="chkLev">--</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Keyword Overlap Ratio:</span>
+                <strong id="chkKeyword">--</strong>
+              </div>
+              <div class="breakdown-row">
+                <span>Closest Historical Fact:</span>
+                <strong id="chkMatchId">--</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 4: GEMINI GENERATOR -->
+    <section id="generator" class="tab-content">
+      <div class="glass-card">
+        <div class="section-header">
+          <h2 class="section-title">⚡ Gemini AI Fact Generator Sandbox</h2>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 24px;">
+          Ask Gemini to generate a novel fun fact while automatically enforcing non-duplication rules against your recorded database.
+        </p>
+
+        <div style="display: flex; gap: 14px; margin-bottom: 24px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-primary" id="genFactBtn">✨ Generate Unique Fact</button>
+          <span style="color: var(--text-muted); font-size: 0.85rem;">Injects up to 50 recent facts as negative constraint prompt.</span>
+        </div>
+
+        <div id="genResultCard" class="fact-card" style="display: none; background: rgba(30, 41, 59, 0.7);">
+          <div class="fact-meta">
+            <span class="badge badge-cat" id="genCat">Science</span>
+            <span class="badge badge-status" id="genUniquenessBadge">100% Unique</span>
+          </div>
+          <div class="fact-text" id="genFactText" style="font-size: 1.1rem; font-weight: 500;">
+            Fact text will appear here...
+          </div>
+          <div class="fact-keywords" id="genKeywords"></div>
+          <p id="genExplanation" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;"></p>
+          <div class="fact-card-footer">
+            <button class="btn btn-secondary btn-sm" id="genCopyBtn">📋 Copy Formatted Note</button>
+            <button class="btn btn-primary btn-sm" id="genSaveBtn">💾 Save to Fact Vault</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SETTINGS & AUTOMATION -->
+    <section id="settings" class="tab-content">
+      <div class="glass-card">
+        <div class="section-header">
+          <h2 class="section-title">⚙️ Settings & Midnight Automation</h2>
+        </div>
+
+        <div style="max-width: 600px;">
+          <div class="form-group">
+            <label class="form-label" for="settingApiKey">Gemini API Key</label>
+            <input type="password" id="settingApiKey" class="form-input" placeholder="AIzaSy...">
+            <small style="color: var(--text-muted); font-size: 0.8rem;">Required for Gemini generation. Saved securely in local storage / Apps Script.</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingScriptUrl">Google Apps Script Web App URL (Optional Endpoint)</label>
+            <input type="text" id="settingScriptUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+            <small style="color: var(--text-muted); font-size: 0.8rem;">Used to sync with your Google Sheet database and trigger Google Keep note creation.</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingStrictness">Duplicate Strictness Threshold (<span id="strictnessVal">65%</span>)</label>
+            <input type="range" id="settingStrictness" min="40" max="90" value="65" style="width: 100%;">
+            <small style="color: var(--text-muted); font-size: 0.8rem;">Facts matching equal to or above this score are flagged as duplicate.</small>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-primary" id="saveSettingsBtn">💾 Save Settings</button>
+            <button class="btn btn-secondary" id="resetDataBtn">🔄 Reload All 64 Historical Facts</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

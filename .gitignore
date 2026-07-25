@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Archives & Backups
+*.zip
+*.tar.gz
+
+# System & OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment & Keys
+.env
+.env.local
