@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.5.0] - 2026-07-24
+
+### Added
+- Removed old `AIzaSy...` placeholder text in `index.html`.
+- Confirmed zero prefix checks remain in Google Apps Script backend.
+- Deployed Web App API version 8 (`AKfycbwuDt79g5lJ_ulv8SNo1NAV-UrdhKXh5JgbQF9CnP8crcdzZ3CtdTJdUTsOud2Ia24`) and pushed to GitHub.
+
 ## [2.4.0] - 2026-07-24
 
 ### Added

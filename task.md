@@ -1,4 +1,4 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v2.4.0
+# Task List: Fun Fact Tracker & Duplicate Prevention System v2.5.0
 
 - [x] Initial setup: Create `task.md` and `CHANGELOG.md`
 - [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
@@ -18,4 +18,5 @@
 - [x] Integrate Google Tasks API (`postToGoogleTasks`) into backend & deploy (`v2.1.0`)
 - [x] Add UI popup alerts & error handling for missing API keys (`v2.2.0`)
 - [x] Enable support for Google AI Studio `AQ.Ab8...` API keys (`v2.4.0`)
+- [x] Verify zero prefix checks remain in Apps Script backend & push v2.5.0 (`v2.5.0`)
 - [x] Update project walkthrough (`walkthrough.md`)
