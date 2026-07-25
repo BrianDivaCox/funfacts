@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.9.0] - 2026-07-24
+
+### Added
+- Enhanced Gemini prompt diversity with random topic domain hints on each retry attempt.
+- Raised temperature to 0.95 and topP to 0.99 for maximum topic variance.
+- Deployed Web App API version 12 (`AKfycbzZj62NBj04NsPP3Yw_v6mouxz2jHyutkMK-78HtFUv-53fK8PzwjnaqjJ80Gx3hss`) and updated `app.js`.
+
 ## [2.8.0] - 2026-07-24
 
 ### Added

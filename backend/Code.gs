@@ -303,23 +303,20 @@ function generateUniqueFactWithGemini(providedApiKey) {
     .map(f => `- [${f.category}] ${f.factText}`)
     .join("\n");
 
-  const systemPrompt = `You are a world-class fun fact and trivia curator.
-Your task is to generate 1 daily fun fact formatted for social media and Google Keep.
-
-CRITICAL CONSTRAINTS:
-1. LENGTH: Must be strictly UNDER 180 CHARACTERS total.
-2. TONE & STYLE: Simple, easy, fun, engaging, and uses 1-2 vibrant emojis.
-3. HASHTAG: Must end with #funfact
-4. DUPLICATE PREVENTION: Cross-reference against this history of used facts to ensure it is completely fresh and NOT a repeat:
-${recentFactsSample || "(No previous facts recorded)"}
-
-Provide your response in raw JSON format (no markdown codeblock wrapper) matching this schema:
-{
-  "factText": "🦒 Giraffes only need 5 to 30 minutes of sleep per day! 😴 #funfact",
-  "category": "Animals | Science | History | Space | Pop Culture | Tech | Nature",
-  "keywords": ["giraffes", "sleep", "minutes"],
-  "explanation": "Brief context or source note"
-}`;
+  const topicAreas = [
+    "Ancient History & Archeology",
+    "Deep Ocean Biology & Sea Life",
+    "Quantum Physics & Cosmology",
+    "Astronomy & Exoplanets",
+    "Linguistics & Word Origins",
+    "World Architecture & Engineering",
+    "Music History & Instruments",
+    "Botany & Micro-biology",
+    "Aviation & Exploration",
+    "Neuroscience & Psychology",
+    "Food Chemistry & Culinary Trivia",
+    "Sports History & World Records"
+  ];
 
   const modelsToTry = [
     "gemini-3.6-flash",
@@ -329,25 +326,45 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
     "gemini-2.0-flash"
   ];
 
-  const payload = {
-    contents: [{
-      parts: [{ text: systemPrompt }]
-    }],
-    generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      maxOutputTokens: 500
-    }
-  };
-
-  let candidateFact = null;
   let lastErrDetail = "";
 
   for (const modelName of modelsToTry) {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
-    let retries = 2;
+    let retries = 3;
     while (retries > 0) {
+      const randomTopic = topicAreas[Math.floor(Math.random() * topicAreas.length)];
+      
+      const systemPrompt = `You are a world-class fun fact and trivia curator.
+Your task is to generate 1 daily fun fact formatted for social media and Google Keep.
+
+CRITICAL CONSTRAINTS:
+1. LENGTH: Must be strictly UNDER 180 CHARACTERS total.
+2. TONE & STYLE: Simple, easy, fun, engaging, and uses 1-2 vibrant emojis.
+3. HASHTAG: Must end with #funfact
+4. TOPIC DIRECTION: Focus specifically on the domain of: ${randomTopic}
+5. DUPLICATE PREVENTION: Cross-reference against this history of used facts to ensure it is completely fresh and NOT a repeat:
+${recentFactsSample || "(No previous facts recorded)"}
+
+Provide your response in raw JSON format (no markdown codeblock wrapper) matching this schema:
+{
+  "factText": "🦒 Giraffes only need 5 to 30 minutes of sleep per day! 😴 #funfact",
+  "category": "${randomTopic.split(' ')[0]}",
+  "keywords": ["key1", "key2", "key3"],
+  "explanation": "Brief context or source note"
+}`;
+
+      const payload = {
+        contents: [{
+          parts: [{ text: systemPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.95,
+          topP: 0.99,
+          maxOutputTokens: 500
+        }
+      };
+
       const response = UrlFetchApp.fetch(apiUrl, {
         method: "post",
         contentType: "application/json",
@@ -368,7 +385,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
           if (!dupCheck.isDuplicate) {
             return {
               factText: parsed.factText,
-              category: parsed.category || "General",
+              category: parsed.category || randomTopic.split(' ')[0],
               keywords: parsed.keywords || extractKeywords(parsed.factText),
               explanation: parsed.explanation || "",
               similarityScore: dupCheck.similarityScore
@@ -391,14 +408,9 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
         break; // try next model
       }
     }
-    if (candidateFact) break;
   }
 
-  if (!candidateFact) {
-    throw new Error("Failed to generate a non-duplicate fact after 3 attempts.");
-  }
-
-  return candidateFact;
+  throw new Error(`Could not generate a non-duplicate fact after multiple attempts. Last detail: ${lastErrDetail}`);
 }
 
 /**
