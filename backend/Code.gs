@@ -14,6 +14,18 @@ const SHEET_NAME = "Fact Log";
 const SETTINGS_SHEET = "Settings";
 
 /**
+ * Custom Menu when opening Google Sheet
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("🎯 Fun Fact Tracker")
+    .addItem("📊 Initialize / Seed Fact Log", "initSpreadsheet")
+    .addItem("🧠 Run Daily Fun Fact Automation Now", "dailyMidnightTrigger")
+    .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
+    .addToUi();
+}
+
+/**
  * Initialize Spreadsheet structure if missing
  */
 function initSpreadsheet() {

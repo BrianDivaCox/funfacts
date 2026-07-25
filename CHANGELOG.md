@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.0.0] - 2026-07-24
+
+### Added
+- Added custom `🎯 Fun Fact Tracker` UI Menu to Google Sheet backend (`onOpen`).
+- Pushed and deployed Web App version 3 (`AKfycbwx0lJhefg9gCbkED9nm3yXaH_VhL9wZUrSHrnyTjnuMIxSxluQB-mgKnV657NvUbE`).
+- Updated frontend default `scriptUrl` in `app.js` and pushed to GitHub.
+
 ## [1.9.0] - 2026-07-24
 
 ### Added
