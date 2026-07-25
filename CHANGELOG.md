@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.9.0] - 2026-07-24
+
+### Added
+- Re-bound clasp and Apps Script backend directly to `FunFacts Database` Google Sheet (`1naLVsXZooix4UnigoHa11OcGve7uM-TFOvE-FpW5YY4`).
+- Deployed Web App API endpoint (`AKfycbw27-96F0el1H0DeLyGDQasZO_vD6fPw3rXhW5b9sMQBa8s1FTYwg8CbYY5nbpNiHo`).
+- Connected frontend `app.js` default `scriptUrl` setting to `FunFacts Database` Web App API endpoint URL.
+
 ## [1.8.0] - 2026-07-24
 
 ### Added

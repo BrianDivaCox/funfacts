@@ -1,4 +1,4 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v1.8.0
+# Task List: Fun Fact Tracker & Duplicate Prevention System v1.9.0
 
 - [x] Initial setup: Create `task.md` and `CHANGELOG.md`
 - [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
@@ -13,6 +13,5 @@
 - [x] Add GitHub remote `https://github.com/BrianDivaCox/funfacts.git` and push `main` branch (`v1.4.1`)
 - [x] Add README.md & GitHub Pages live site deployment configuration (`v1.5.0`)
 - [x] Add `.nojekyll` for GitHub Pages & provide step-by-step setup guide (`v1.5.1`)
-- [x] Bind Apps Script to user's Google Sheet `1vcgnSBPjq2tvgfdPACIHgdB7EfnZbBd5qcMoq9Ygx-k` & deploy (`v1.8.0`)
-- [x] Connect frontend `app.js` API URL to user's Google Sheet Web App endpoint
+- [x] Re-bind Apps Script & Web App deployment to `FunFacts Database` Google Sheet (`v1.9.0`)
 - [x] Update project walkthrough (`walkthrough.md`)
