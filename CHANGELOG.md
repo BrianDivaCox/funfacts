@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.4.1] - 2026-07-24
+
+### Added
+- Connected remote repository `https://github.com/BrianDivaCox/funfacts.git`.
+- Pushed complete Fun Fact Tracker codebase (v1.4.1) to GitHub main branch.
+
 ## [1.4.0] - 2026-07-24
 
 ### Added
