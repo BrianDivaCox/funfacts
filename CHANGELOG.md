@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.5.0] - 2026-07-24
+
+### Added
+- Configured GitHub Pages live web app deployment (`https://briandivacox.github.io/funfacts/`).
+- Added `README.md` with live demo badge, feature overview, and getting started instructions.
+
 ## [1.4.1] - 2026-07-24
 
 ### Added
