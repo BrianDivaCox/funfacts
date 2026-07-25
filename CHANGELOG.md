@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.4.0] - 2026-07-24
+
+### Added
+- Removed key prefix restrictions to fully support new `AQ.Ab8...` API keys issued by Google AI Studio.
+- Deployed Web App API version 7 (`AKfycbwe6qn00_r9hwuBphqcUGHS7eJw2yHdpifMPAzU5smv-Q6-7MhzpZN_h6NPNJPSSZ4`) and updated `app.js`.
+
 ## [2.3.0] - 2026-07-24
 
 ### Added

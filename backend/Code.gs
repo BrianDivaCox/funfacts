@@ -297,10 +297,6 @@ function generateUniqueFactWithGemini(providedApiKey) {
     throw new Error("Gemini API key is missing. Please open the Settings tab and paste your API key in cell B2.");
   }
 
-  if (!apiKey.startsWith("AIzaSy")) {
-    throw new Error(`The key in cell B2 starts with '${apiKey.substring(0, 7)}...', which is not a valid Gemini API Key.\n\nGemini API keys MUST start with 'AIzaSy...'.\nGet a free key at: https://aistudio.google.com/app/apikey`);
-  }
-
   const existingFacts = getAllFacts();
   const recentFactsSample = existingFacts
     .slice(-50)
