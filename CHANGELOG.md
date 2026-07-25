@@ -2,6 +2,16 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.4.0] - 2026-07-24
+
+### Fixed - Root cause of duplicate slippage
+- **Added English word stemmer** (`stemWord()`): Words like `wombats`→`wombat`, `rolling`→`roll`, `stopped`→`stop` now reduce to the same root before comparison. This was the true root cause — two near-identical facts scored below the threshold purely because plural vs. singular forms didn't match.
+- **Lowered default `STRICTNESS_THRESHOLD` from `0.65` → `0.55`**: Gives the Jaccard+Levenshtein engine more room to catch rephrased versions of the same fact.
+- Deployed Web App API version 17 (`AKfycbwpsL87rJPhxa-AW2_AgRfd8rPr_DZBNBojAWeM_FgUvZiwzWTpzJhQ9x6JSfKNvh4`).
+
+### Note on Pro Subscription
+- Rate limit errors were from the free-tier quota cap. With a paid/Pro Gemini API key, those errors should not occur. The model chain (2.5-flash → 2.0-flash → 1.5-flash-latest → 2.5-pro) remains in place.
+
 ## [3.3.0] - 2026-07-24
 
 ### Added

@@ -288,7 +288,7 @@ function checkDuplicate(targetFact, existingFactsList) {
     }
   }
 
-  const threshold = parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.65;
+  const threshold = parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.55;
   const isDup = maxScore >= threshold;
 
   return {
@@ -312,7 +312,32 @@ function normalizeText(text) {
 }
 
 /**
- * Keyword extraction helper
+ * Minimal English stemmer — strips common suffixes so
+ * "wombats" and "wombat", "rolling" and "roll", "stopped" and "stop" match.
+ */
+function stemWord(word) {
+  if (!word || word.length < 4) return word;
+  // Order matters — check longest suffix first
+  if (word.endsWith("iness")) return word.slice(0, -5) + "y";
+  if (word.endsWith("ness"))  return word.slice(0, -4);
+  if (word.endsWith("ment"))  return word.slice(0, -4);
+  if (word.endsWith("tion"))  return word.slice(0, -4);
+  if (word.endsWith("able"))  return word.slice(0, -4);
+  if (word.endsWith("ible"))  return word.slice(0, -4);
+  if (word.endsWith("ing"))   return word.length > 6 ? word.slice(0, -3) : word;
+  if (word.endsWith("ied"))   return word.slice(0, -3) + "y";
+  if (word.endsWith("ies"))   return word.slice(0, -3) + "y";
+  if (word.endsWith("ed"))    return word.length > 5 ? word.slice(0, -2) : word;
+  if (word.endsWith("ly"))    return word.slice(0, -2);
+  if (word.endsWith("er"))    return word.length > 5 ? word.slice(0, -2) : word;
+  if (word.endsWith("est"))   return word.length > 5 ? word.slice(0, -3) : word;
+  if (word.endsWith("es"))    return word.slice(0, -2);
+  if (word.endsWith("s"))     return word.length > 4 ? word.slice(0, -1) : word;
+  return word;
+}
+
+/**
+ * Keyword extraction helper — normalizes AND stems each word
  */
 function extractKeywords(text) {
   const stopWords = new Set([
@@ -328,8 +353,10 @@ function extractKeywords(text) {
   ]);
   
   const words = normalizeText(text).split(" ");
-  const keywords = words.filter(w => w.length > 2 && !stopWords.has(w));
-  return Array.from(new Set(keywords));
+  const stemmed = words
+    .filter(w => w.length > 2 && !stopWords.has(w))
+    .map(w => stemWord(w));                          // ← stem each keyword
+  return Array.from(new Set(stemmed));
 }
 
 /**
