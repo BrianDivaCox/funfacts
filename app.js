@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "https://script.google.com/macros/s/AKfycbwuDt79g5lJ_ulv8SNo1NAV-UrdhKXh5JgbQF9CnP8crcdzZ3CtdTJdUTsOud2Ia24/exec",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1841,7 +1841,7 @@ class FactVaultApp {
     }
     
     // Always bind to latest FunFacts Database Web App URL
-    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbwuDt79g5lJ_ulv8SNo1NAV-UrdhKXh5JgbQF9CnP8crcdzZ3CtdTJdUTsOud2Ia24/exec";
+    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo/exec";
 
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";
@@ -2262,19 +2262,29 @@ CONSTRAINTS:
 4. Do NOT generate anything similar to previously used facts:\n${recentSample}
 Return JSON format: {"factText": "... #funfact", "category": "Animals|Science|History|Space|Tech", "keywords": ["k1","k2"]}`;
         
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.settings.apiKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const rawText = data.candidates[0].content.parts[0].text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(rawText);
-        candidate = {
-          factText: parsed.factText,
-          category: parsed.category || "General",
-          keywords: parsed.keywords || this.extractKeywords(parsed.factText)
-        };
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.5-pro"];
+        for (const modelName of modelsToTry) {
+          try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.settings.apiKey}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const rawText = data.candidates[0].content.parts[0].text.replace(/```json/g, "").replace(/```/g, "").trim();
+              const parsed = JSON.parse(rawText);
+              candidate = {
+                factText: parsed.factText,
+                category: parsed.category || "General",
+                keywords: parsed.keywords || this.extractKeywords(parsed.factText)
+              };
+              if (candidate) break;
+            }
+          } catch (mErr) {
+            console.warn(`Model ${modelName} call failed:`, mErr);
+          }
+        }
       } catch (err) {
         console.warn("Gemini direct call fallback to local generator:", err);
       }

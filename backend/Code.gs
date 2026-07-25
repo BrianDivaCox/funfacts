@@ -321,7 +321,13 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
   "explanation": "Brief context or source note"
 }`;
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-2.5-pro"
+  ];
+
   const payload = {
     contents: [{
       parts: [{ text: systemPrompt }]
@@ -333,52 +339,58 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
     }
   };
 
-  let retries = 3;
   let candidateFact = null;
+  let lastErrDetail = "";
 
-  while (retries > 0) {
-    const response = UrlFetchApp.fetch(apiUrl, {
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-
-    const responseCode = response.getResponseCode();
-    if (responseCode !== 200) {
-      let errDetail = response.getContentText();
-      try {
-        const errObj = JSON.parse(errDetail);
-        if (errObj.error && errObj.error.message) {
-          errDetail = errObj.error.message;
-        }
-      } catch (e) {}
-      throw new Error(`Gemini API Error (HTTP ${responseCode}): ${errDetail}`);
-    }
-
-    const resData = JSON.parse(response.getContentText());
-    const rawText = resData.candidates[0].content.parts[0].text;
-    const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+  for (const modelName of modelsToTry) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
-    try {
-      const parsed = JSON.parse(cleanJsonText);
-      const dupCheck = checkDuplicate(parsed.factText, existingFacts);
-      
-      if (!dupCheck.isDuplicate) {
-        candidateFact = {
-          factText: parsed.factText,
-          category: parsed.category || "General",
-          keywords: parsed.keywords || extractKeywords(parsed.factText),
-          explanation: parsed.explanation || "",
-          similarityScore: dupCheck.similarityScore
-        };
-        break;
+    let retries = 2;
+    while (retries > 0) {
+      const response = UrlFetchApp.fetch(apiUrl, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      });
+
+      const responseCode = response.getResponseCode();
+      if (responseCode === 200) {
+        const resData = JSON.parse(response.getContentText());
+        const rawText = resData.candidates[0].content.parts[0].text;
+        const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+        
+        try {
+          const parsed = JSON.parse(cleanJsonText);
+          const dupCheck = checkDuplicate(parsed.factText, existingFacts);
+          
+          if (!dupCheck.isDuplicate) {
+            return {
+              factText: parsed.factText,
+              category: parsed.category || "General",
+              keywords: parsed.keywords || extractKeywords(parsed.factText),
+              explanation: parsed.explanation || "",
+              similarityScore: dupCheck.similarityScore
+            };
+          }
+          Logger.log(`Duplicate detected during Gemini generation (${dupCheck.details}). Retrying...`);
+        } catch (e) {
+          Logger.log("JSON parsing error on response: " + e.message);
+        }
+        retries--;
+      } else {
+        lastErrDetail = response.getContentText();
+        try {
+          const errObj = JSON.parse(lastErrDetail);
+          if (errObj.error && errObj.error.message) {
+            lastErrDetail = errObj.error.message;
+          }
+        } catch (e) {}
+        Logger.log(`Model ${modelName} returned HTTP ${responseCode}: ${lastErrDetail}`);
+        break; // try next model
       }
-      Logger.log(`Duplicate detected during Gemini generation (${dupCheck.details}). Retrying...`);
-    } catch (e) {
-      Logger.log("JSON parsing error on Gemini output: " + e.message);
     }
-    retries--;
+    if (candidateFact) break;
   }
 
   if (!candidateFact) {

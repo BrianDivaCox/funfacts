@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.6.0] - 2026-07-24
+
+### Added
+- Updated Gemini API endpoint to `gemini-2.5-flash` with multi-model fallback array (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-latest`, `gemini-2.5-pro`).
+- Deployed Web App API version 9 (`AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo`) and updated `app.js`.
+
 ## [2.5.0] - 2026-07-24
 
 ### Added
