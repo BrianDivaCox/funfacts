@@ -2,6 +2,14 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.2.0] - 2026-07-24
+
+### Fixed
+- **Root cause of duplicate posting**: `doGet` and `doPost` were calling `initSpreadsheet()` on every single request, potentially overwriting the sheet header row and causing the fact history to not be read correctly.
+- **Hard duplicate guard added in `saveFactToSheet`**: Before writing any new fact to the sheet, the function now re-reads ALL current facts and runs a final `checkDuplicate()` call. If it's a duplicate it throws an error instead of saving.
+- **Prompt sample increased to 20 facts**: Slightly larger recent-history sample for better Gemini guidance on avoiding repeats while staying token-efficient.
+- Deployed Web App API version 15 (`AKfycbzDfM6RRksYHvJW69XYRq_SqhdSogZuFJOhefXeL7vp9MMDuLJUBRY9XKj9yLZbXtI`) and updated `app.js`.
+
 ## [3.1.0] - 2026-07-24
 
 ### Added

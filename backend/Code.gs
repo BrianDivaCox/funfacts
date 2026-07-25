@@ -311,9 +311,10 @@ function generateUniqueFactWithGemini(providedApiKey) {
   }
 
   const existingFacts = getAllFacts();
-  // Send smaller 15-fact sample to keep input tokens low and stay under free tier quota
+  Logger.log(`Loaded ${existingFacts.length} existing facts for duplicate checking.`);
+  // Send last 20 facts as sample in prompt (token-efficient but covers recent history)
   const recentFactsSample = existingFacts
-    .slice(-15)
+    .slice(-20)
     .map(f => `- [${f.category}] ${f.factText}`)
     .join("\n");
 
@@ -437,6 +438,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
 
 /**
  * Save new fact to Spreadsheet
+ * Runs a final hard duplicate check before writing to prevent any slippage.
  */
 function saveFactToSheet(factObj) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -444,6 +446,13 @@ function saveFactToSheet(factObj) {
   if (!sheet) {
     initSpreadsheet();
     sheet = ss.getSheetByName(SHEET_NAME);
+  }
+
+  // HARD DUPLICATE GUARD: Re-check against ALL facts in sheet right before saving
+  const allCurrentFacts = getAllFacts();
+  const finalDupCheck = checkDuplicate(factObj.factText, allCurrentFacts);
+  if (finalDupCheck.isDuplicate) {
+    throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}..."`);
   }
 
   const id = "FACT-" + Date.now();
@@ -635,7 +644,11 @@ function setupMidnightTrigger() {
  * Web App REST Endpoint (GET)
  */
 function doGet(e) {
-  initSpreadsheet();
+  // Only init if sheets are missing — do NOT call on every request to avoid overwriting headers
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss.getSheetByName(SHEET_NAME) || !ss.getSheetByName(SETTINGS_SHEET)) {
+    initSpreadsheet();
+  }
   const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getFacts";
   
   let responseData = {};
@@ -681,7 +694,11 @@ function doGet(e) {
  * Web App REST Endpoint (POST)
  */
 function doPost(e) {
-  initSpreadsheet();
+  // Only init if sheets are missing — do NOT call on every request to avoid overwriting headers
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss.getSheetByName(SHEET_NAME) || !ss.getSheetByName(SETTINGS_SHEET)) {
+    initSpreadsheet();
+  }
   let postData = {};
   
   try {
