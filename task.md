@@ -1,4 +1,4 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v2.6.0
+# Task List: Fun Fact Tracker & Duplicate Prevention System v2.7.0
 
 - [x] Initial setup: Create `task.md` and `CHANGELOG.md`
 - [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
@@ -18,5 +18,5 @@
 - [x] Integrate Google Tasks API (`postToGoogleTasks`) into backend & deploy (`v2.1.0`)
 - [x] Add UI popup alerts & error handling for missing API keys (`v2.2.0`)
 - [x] Enable support for Google AI Studio `AQ.Ab8...` API keys (`v2.4.0`)
-- [x] Update model endpoint to `gemini-2.5-flash` with fallback model loop (`v2.6.0`)
+- [x] Add `gemini-3.6-flash` and `gemini-3-flash` to top of model fallback list (`v2.7.0`)
 - [x] Update project walkthrough (`walkthrough.md`)

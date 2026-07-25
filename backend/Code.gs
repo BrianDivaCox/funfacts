@@ -322,6 +322,8 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
 }`;
 
   const modelsToTry = [
+    "gemini-3.6-flash",
+    "gemini-3-flash",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash-latest",

@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "https://script.google.com/macros/s/AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo/exec",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbztHgayzNDNU8GZ06TSul0imJYN7AkNcpWQM9yvk9OulIg63nZNK6YwXQniXY6evqA/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1841,7 +1841,7 @@ class FactVaultApp {
     }
     
     // Always bind to latest FunFacts Database Web App URL
-    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo/exec";
+    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbztHgayzNDNU8GZ06TSul0imJYN7AkNcpWQM9yvk9OulIg63nZNK6YwXQniXY6evqA/exec";
 
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";
@@ -2262,7 +2262,7 @@ CONSTRAINTS:
 4. Do NOT generate anything similar to previously used facts:\n${recentSample}
 Return JSON format: {"factText": "... #funfact", "category": "Animals|Science|History|Space|Tech", "keywords": ["k1","k2"]}`;
         
-        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.5-pro"];
+        const modelsToTry = ["gemini-3.6-flash", "gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.5-pro"];
         for (const modelName of modelsToTry) {
           try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.settings.apiKey}`, {
