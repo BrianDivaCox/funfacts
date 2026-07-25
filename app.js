@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "https://script.google.com/macros/s/AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU/exec",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbyXB0lJa6apsJ99DAvtT0TPLDYXvPILmAJEiFxCqe5mdsGChYMSbAqEGY5aZXNeMRMs/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1840,9 +1840,8 @@ class FactVaultApp {
       }
     }
     
-    if (!this.settings.scriptUrl) {
-      this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU/exec";
-    }
+    // Always bind to user's FunFacts Google Sheet Web App URL
+    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbyXB0lJa6apsJ99DAvtT0TPLDYXvPILmAJEiFxCqe5mdsGChYMSbAqEGY5aZXNeMRMs/exec";
 
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";
