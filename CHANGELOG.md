@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.7.0] - 2026-07-24
+
+### Added
+- Created dedicated Google Sheet titled `FunFacts Database` and attached Google Apps Script backend project using `clasp create`.
+- Deployed Web App version 1 (`AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU`).
+- Connected frontend `app.js` default `scriptUrl` setting directly to the new `FunFacts Database` Web App API endpoint URL.
+
 ## [1.6.0] - 2026-07-24
 
 ### Added

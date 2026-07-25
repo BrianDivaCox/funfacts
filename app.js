@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1840,6 +1840,10 @@ class FactVaultApp {
       }
     }
     
+    if (!this.settings.scriptUrl) {
+      this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU/exec";
+    }
+
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";
     document.getElementById("settingScriptUrl").value = this.settings.scriptUrl || "";
