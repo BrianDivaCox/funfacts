@@ -2,6 +2,16 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.3.0] - 2026-07-24
+
+### Added
+- **`🔍 Re-Scan All Facts for Duplicates` menu item**: New Google Sheets menu option that re-scans every row in the Fact Log and corrects the Similarity Score + Status columns in-place. Highlights confirmed duplicates in red.
+- **`reScanAllDuplicates()` function**: Iterates chronologically through all rows, checking each fact against all prior facts using the same Levenshtein + Jaccard engine as live generation.
+
+### Fixed
+- Rows 47 and 65 (both wombat cube-poop facts) were seeded with score `0` because historical data bypass the live duplicate engine. The new re-scan tool will correctly flag them.
+- Deployed Web App API version 16 (`AKfycbxsBLX7mJ8b56Yz5WWAj2B5NQ5EbvTjkQzecejWJGO8KiqB43fIbciGczdyAmuu-tA`).
+
 ## [3.2.0] - 2026-07-24
 
 ### Fixed
