@@ -508,11 +508,25 @@ function dailyMidnightTrigger() {
   Logger.log("Running Daily Midnight Fun Fact Automation...");
   initSpreadsheet();
 
+  let ui = null;
+  try {
+    ui = SpreadsheetApp.getUi();
+  } catch (e) {
+    // Background execution without active UI
+  }
+
   try {
     const apiKey = getSetting("GEMINI_API_KEY");
     if (!apiKey) {
-      Logger.log("Skipping midnight run: GEMINI_API_KEY not configured.");
-      return;
+      Logger.log("Skipping run: GEMINI_API_KEY not configured.");
+      if (ui) {
+        ui.alert(
+          "⚠️ Gemini API Key Missing",
+          "Please open the 'Settings' tab in this Google Sheet and paste your API Key in cell B2 (next to GEMINI_API_KEY).",
+          ui.ButtonSet.OK
+        );
+      }
+      return { success: false, error: "GEMINI_API_KEY missing in Settings tab" };
     }
 
     const uniqueFact = generateUniqueFactWithGemini(apiKey);
@@ -524,8 +538,22 @@ function dailyMidnightTrigger() {
 
     const saved = saveFactToSheet(uniqueFact);
     Logger.log("Successfully processed daily fun fact: " + saved.id);
+
+    if (ui) {
+      ui.alert(
+        "🎉 Daily Fun Fact Created & Logged!",
+        `Fact #${saved.id}:\n\n${saved.factText}\n\n✅ Saved to 'Fact Log' tab!\n✅ Pushed to Google Tasks App!`,
+        ui.ButtonSet.OK
+      );
+    }
+
+    return { success: true, fact: saved };
   } catch (err) {
     Logger.log("Error in dailyMidnightTrigger: " + err.message);
+    if (ui) {
+      ui.alert("❌ Error", "Automation failed: " + err.message, ui.ButtonSet.OK);
+    }
+    return { success: false, error: err.message };
   }
 }
 

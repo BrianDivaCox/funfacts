@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [2.2.0] - 2026-07-24
+
+### Added
+- Added interactive UI alerts (`SpreadsheetApp.getUi().alert`) for Google Sheet trigger execution feedback.
+- If `GEMINI_API_KEY` is missing in the `Settings` tab, a clear alert dialog pops up guiding the user.
+- Deployed Web App API version 5 (`AKfycbzIvzN7ofkDqjZuFrqDhnLPkn4YeXVxjIaU1xXv7c1WqMjOm2SM8AruZsFjRLDzlvs`) and updated `app.js`.
+
 ## [2.1.0] - 2026-07-24
 
 ### Added

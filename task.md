@@ -1,4 +1,4 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v2.1.0
+# Task List: Fun Fact Tracker & Duplicate Prevention System v2.2.0
 
 - [x] Initial setup: Create `task.md` and `CHANGELOG.md`
 - [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
@@ -16,4 +16,5 @@
 - [x] Re-bind Apps Script & Web App deployment to `FunFacts Database` Google Sheet (`v1.9.0`)
 - [x] Add custom `🎯 Fun Fact Tracker` UI Menu to Google Sheet backend (`v2.0.0`)
 - [x] Integrate Google Tasks API (`postToGoogleTasks`) into backend & deploy (`v2.1.0`)
+- [x] Add UI popup alerts & error handling for missing API keys (`v2.2.0`)
 - [x] Update project walkthrough (`walkthrough.md`)
