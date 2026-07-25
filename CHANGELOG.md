@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.5.1] - 2026-07-24
+
+### Added
+- Added `.nojekyll` file to ensure GitHub Pages bypasses Jekyll build step and renders static site instantly.
+- Added step-by-step GitHub Pages setup instructions.
+
 ## [1.5.0] - 2026-07-24
 
 ### Added

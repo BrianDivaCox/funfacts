@@ -1,4 +1,4 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v1.5.0
+# Task List: Fun Fact Tracker & Duplicate Prevention System v1.5.1
 
 - [x] Initial setup: Create `task.md` and `CHANGELOG.md`
 - [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
@@ -12,4 +12,5 @@
 - [x] Initialize Git repository, `.gitignore`, and create initial commit (`v1.4.0`)
 - [x] Add GitHub remote `https://github.com/BrianDivaCox/funfacts.git` and push `main` branch (`v1.4.1`)
 - [x] Add README.md & GitHub Pages live site deployment configuration (`v1.5.0`)
+- [x] Add `.nojekyll` for GitHub Pages & provide step-by-step setup guide (`v1.5.1`)
 - [x] Update project walkthrough (`walkthrough.md`)
