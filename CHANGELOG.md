@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [1.6.0] - 2026-07-24
+
+### Added
+- Proactively pushed and integrated Fun Fact Tracker module (`FunFactTracker.js`) directly into Google Apps Script backend using `clasp`.
+- Embedded `🎯 Fun Fact Tracker` options directly into Google Sheets Admin Menu (`dailyMidnightFunFactTrigger`, `setupFunFactMidnightTrigger`, `initFunFactSheet`).
+
 ## [1.5.1] - 2026-07-24
 
 ### Added
