@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.1.0] - 2026-07-24
+
+### Added
+- Added automatic 4-second exponential backoff delay (`Utilities.sleep(4000)`) on HTTP 429 rate limits and free tier quota limits.
+- Optimized input prompt tokens by 70% (sample reduced to 15 recent facts) to prevent free tier token quota exhaustion.
+- Deployed Web App API version 14 (`AKfycbyU2nJXml9k5DDlc43WR5cZMP-vJ-WfE8-KRaJlr4llgMTZziqfJpgGDU0KqBm_8s4`) and updated `app.js`.
+
 ## [3.0.0] - 2026-07-24
 
 ### Added

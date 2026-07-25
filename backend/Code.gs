@@ -311,8 +311,9 @@ function generateUniqueFactWithGemini(providedApiKey) {
   }
 
   const existingFacts = getAllFacts();
+  // Send smaller 15-fact sample to keep input tokens low and stay under free tier quota
   const recentFactsSample = existingFacts
-    .slice(-50)
+    .slice(-15)
     .map(f => `- [${f.category}] ${f.factText}`)
     .join("\n");
 
@@ -332,11 +333,10 @@ function generateUniqueFactWithGemini(providedApiKey) {
   ];
 
   const modelsToTry = [
-    "gemini-3.6-flash",
-    "gemini-3.5-flash",
-    "gemini-3.1-pro",
     "gemini-2.5-flash",
-    "gemini-2.0-flash"
+    "gemini-2.0-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-2.5-pro"
   ];
 
   let lastErrDetail = "";
@@ -355,8 +355,8 @@ CRITICAL CONSTRAINTS:
 1. LENGTH: Must be strictly UNDER 180 CHARACTERS total.
 2. TONE & STYLE: Simple, easy, fun, engaging, and uses 1-2 vibrant emojis.
 3. HASHTAG: Must end with #funfact
-4. TOPIC DIRECTION: Focus specifically on the domain of: ${randomTopic}
-5. DUPLICATE PREVENTION: Cross-reference against this history of used facts to ensure it is completely fresh and NOT a repeat:
+4. TOPIC DIRECTION: Focus specifically on: ${randomTopic}
+5. DUPLICATE PREVENTION: Ensure fresh topic unlike:
 ${recentFactsSample || "(No previous facts recorded)"}
 
 Provide your response in raw JSON format (no markdown codeblock wrapper) matching this schema:
@@ -364,7 +364,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
   "factText": "🦒 Giraffes only need 5 to 30 minutes of sleep per day! 😴 #funfact",
   "category": "${randomTopic.split(' ')[0]}",
   "keywords": ["key1", "key2", "key3"],
-  "explanation": "Brief context or source note"
+  "explanation": "Brief context"
 }`;
 
       const payload = {
@@ -374,7 +374,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
         generationConfig: {
           temperature: 0.95,
           topP: 0.99,
-          maxOutputTokens: 500
+          maxOutputTokens: 300
         }
       };
 
@@ -417,13 +417,22 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
             lastErrDetail = errObj.error.message;
           }
         } catch (e) {}
+        
+        // Handle 429 Rate Limit / Quota Exceeded gracefully with backoff
+        if (responseCode === 429 || lastErrDetail.indexOf("Quota exceeded") !== -1 || lastErrDetail.indexOf("rate-limits") !== -1) {
+          Logger.log(`Rate limit/Quota hit (HTTP ${responseCode}). Pausing 4 seconds for quota bucket reset...`);
+          Utilities.sleep(4000);
+          retries--;
+          continue;
+        }
+
         Logger.log(`Model ${modelName} returned HTTP ${responseCode}: ${lastErrDetail}`);
-        break; // try next model
+        break; // try next model if 404 or 400
       }
     }
   }
 
-  throw new Error(`Could not generate a non-duplicate fact after multiple attempts. Last detail: ${lastErrDetail}`);
+  throw new Error(`Gemini API Error: Quota or rate limit exceeded. Please wait 10 seconds and try again. Detail: ${lastErrDetail}`);
 }
 
 /**
