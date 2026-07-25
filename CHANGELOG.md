@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.0.0] - 2026-07-24
+
+### Added
+- Auto-seeded all 64 historical Google Keep facts directly into the Google Sheet `Fact Log` tab.
+- Updated `initSpreadsheet()` and `📊 Initialize / Seed Fact Log` to automatically populate 64 historical rows.
+- Deployed Web App API version 13 (`AKfycbzPPt7bLkgGdGHK99qiqP_IPUTSxJMMRv2M11B1qr5TZMSNJou3RNzdIY1tElWwnNo`) and updated `app.js`.
+
 ## [2.9.0] - 2026-07-24
 
 ### Added
