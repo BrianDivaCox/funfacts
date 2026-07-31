@@ -288,7 +288,7 @@ function checkDuplicate(targetFact, existingFactsList) {
     }
   }
 
-  const threshold = parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.55;
+  const threshold = parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.60;
   const isDup = maxScore >= threshold;
 
   return {
@@ -424,18 +424,48 @@ function generateUniqueFactWithGemini(providedApiKey) {
     .join("\n");
 
   const topicAreas = [
-    "Ancient History & Archeology",
-    "Deep Ocean Biology & Sea Life",
-    "Quantum Physics & Cosmology",
+    // Science & Nature
+    "Deep Ocean Biology & Bioluminescence",
+    "Quantum Physics & Particle Science",
+    "Volcanology & Geological Wonders",
+    "Meteorology & Extreme Weather",
+    "Entomology & Insect Behavior",
+    "Mycology & Fungi Facts",
+    "Botany & Carnivorous Plants",
+    "Genetics & DNA Discoveries",
+    "Paleontology & Prehistoric Life",
+    // Space & Astronomy
     "Astronomy & Exoplanets",
-    "Linguistics & Word Origins",
-    "World Architecture & Engineering",
-    "Music History & Instruments",
-    "Botany & Micro-biology",
-    "Aviation & Exploration",
-    "Neuroscience & Psychology",
+    "Black Holes & Neutron Stars",
+    "Mars & Planetary Exploration",
+    "Ancient Calendars & Timekeeping",
+    // History & Culture
+    "Ancient History & Archaeology",
+    "Medieval Engineering & Castles",
+    "Ancient Rome & Greece",
+    "Viking Age & Norse Myths",
+    "Cold War Secrets & Spy Tech",
+    "Ancient Egypt & Pharaohs",
+    "Aztec & Mayan Civilizations",
+    "Silk Road & Trade History",
+    // Human Body & Psychology
+    "Neuroscience & Brain Quirks",
+    "Sleep Science & Dreams",
+    "Human Senses & Perception",
+    "Psychology & Optical Illusions",
+    "Medicine & Surgery History",
+    // Food, Art & Language
     "Food Chemistry & Culinary Trivia",
-    "Sports History & World Records"
+    "Linguistics & Word Origins",
+    "Art History & Famous Forgeries",
+    "Music Theory & Instrument Origins",
+    "Film History & Silent Movies",
+    // Engineering & Tech
+    "World Architecture & Megastructures",
+    "Aviation & Air Travel History",
+    "Cryptography & Code Breaking",
+    "Sports World Records & Oddities",
+    "Mathematics & Number Theory"
   ];
 
   const modelsToTry = [
@@ -458,7 +488,7 @@ function generateUniqueFactWithGemini(providedApiKey) {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
-    let retries = 2; // Reduced from 3 → 2 to stay within execution time limit
+    let retries = 3; // 3 retries × 4 models = 12 total attempts
     while (retries > 0) {
       // Time-guard inside retry loop too
       if (Date.now() - startTime > MAX_RUNTIME_MS) break;

@@ -2,6 +2,15 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.6.1] - 2026-07-30
+
+### Fixed
+- **"Could not generate a non-duplicate fact" error**: Root cause was only 8 total attempts (2 retries × 4 models) with a 0.55 threshold being too tight for 70+ facts in the log. Three changes made:
+  - **Retries restored to 3 per model** (12 total attempts)
+  - **Threshold raised 0.55 → 0.60** — the stemmer handles real duplicates, 0.55 was causing false positives
+  - **Topic list expanded from 12 → 36 entries** covering much more obscure territory (Mycology, Cryptography, Viking Age, Cold War Spy Tech, Sleep Science, Silent Films, etc.) so Gemini gets pushed into unique territory more reliably
+- Deployed Web App API version 20 (`AKfycbw8gIUFs8yyvMuBZ4_PxxKNpBhUqRiRWurV_4prlH7w_a50U3MabSelz-2nd5rot3U`).
+
 ## [3.6.0] - 2026-07-30
 
 ### Fixed
