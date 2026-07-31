@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.1.2] - 2026-07-30
+
+### Added
+- **1-Click Google Tasks Interactive Test (`testPostToGoogleTasks`)**: Added a test menu item `📌 Test Post to Google Tasks App` to the `🎯 Fun Fact Tracker` menu in Google Sheets. Instantly creates a test task in the Google Tasks App to verify integration.
+
 ## [4.1.1] - 2026-07-30
 
 ### Fixed

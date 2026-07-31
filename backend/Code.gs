@@ -23,6 +23,7 @@ function onOpen() {
     .addItem("🧠 Run Daily Fun Fact Automation Now", "dailyMidnightTrigger")
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
+    .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
     .addItem("🔍 Re-Scan All Facts for Duplicates", "reScanAllDuplicates")
     .addItem("🎨 Apply Beautiful Theme & Formatting", "formatSheetArtistically")
     .addToUi();
@@ -908,6 +909,30 @@ function postToGoogleTasks(factText, category) {
   } catch (err) {
     Logger.log("Google Tasks API Notice: " + err.message);
     return { success: false, error: err.message };
+  }
+}
+
+/**
+ * 1-Click Interactive Test for Google Tasks Integration
+ * Run from menu: 🎯 Fun Fact Tracker > 📌 Test Post to Google Tasks App
+ */
+function testPostToGoogleTasks() {
+  const ui = SpreadsheetApp.getUi();
+  const testFact = "🦥 Sloths can hold their breath for 40 minutes underwater! 🌊 #funfact";
+  const res = postToGoogleTasks(testFact, "Animals");
+  
+  if (res && res.success) {
+    ui.alert(
+      "🎉 Google Tasks Test Success!",
+      `Successfully created task in your Google Tasks App under "FunFacts" list!\n\n📌 Task Title: "${res.title}"`,
+      ui.ButtonSet.OK
+    );
+  } else {
+    ui.alert(
+      "⚠️ Google Tasks Test Notice",
+      `Details: ${res ? res.error : "Unknown response"}`,
+      ui.ButtonSet.OK
+    );
   }
 }
 
