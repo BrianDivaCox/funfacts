@@ -540,31 +540,59 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
       }
 
       const responseCode = response.getResponseCode();
+      const rawBody = response.getContentText();
 
       if (responseCode === 200) {
         let resData;
         try {
-          resData = JSON.parse(response.getContentText());
+          resData = JSON.parse(rawBody);
         } catch (parseErr) {
-          // Truncated or malformed top-level response — skip this retry
-          Logger.log(`JSON parsing error on response from ${modelName}: ${parseErr.message}`);
+          // Log first 300 chars of raw body to diagnose the issue
+          Logger.log(`JSON parsing error on response from ${modelName}: ${parseErr.message}. Raw body (first 300): ${rawBody.substring(0, 300)}`);
+          lastErrDetail = `Top-level JSON parse failed on ${modelName}: ${parseErr.message}`;
           retries--;
           continue;
         }
 
         // Guard against empty/blocked candidates
         if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
-          Logger.log(`${modelName} returned no usable candidates (possible safety block). Retrying...`);
+          const blockReason = resData.promptFeedback ? JSON.stringify(resData.promptFeedback) : "unknown";
+          Logger.log(`${modelName} returned no usable candidates. Block reason: ${blockReason}`);
+          lastErrDetail = `No candidates from ${modelName}: ${blockReason}`;
           retries--;
           continue;
         }
 
         const rawText = resData.candidates[0].content.parts[0].text;
+        Logger.log(`${modelName} raw fact text: ${rawText.substring(0, 200)}`);
         const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
         
+        let parsed = null;
         try {
-          const parsed = JSON.parse(cleanJsonText);
+          parsed = JSON.parse(cleanJsonText);
+        } catch (e) {
+          // JSON malformed — try regex fallback to extract factText directly
+          Logger.log(`Inner JSON parse failed from ${modelName}: ${e.message}. Trying regex fallback...`);
+          const match = rawText.match(/"factText"\s*:\s*"([^"]+)"/);
+          if (match && match[1]) {
+            parsed = {
+              factText: match[1],
+              category: randomTopic.split(' ')[0],
+              keywords: extractKeywords(match[1]),
+              explanation: ""
+            };
+            Logger.log(`Regex fallback succeeded: ${parsed.factText}`);
+          } else {
+            Logger.log(`Regex fallback also failed. Raw text: ${rawText.substring(0, 200)}`);
+            lastErrDetail = `Malformed JSON from ${modelName}: ${e.message}`;
+            retries--;
+            continue;
+          }
+        }
+
+        if (parsed && parsed.factText) {
           const dupCheck = checkDuplicate(parsed.factText, existingFacts);
+          Logger.log(`Duplicate check: isDuplicate=${dupCheck.isDuplicate}, score=${dupCheck.similarityScore}, threshold=0.60`);
           
           if (!dupCheck.isDuplicate) {
             return {
@@ -575,14 +603,13 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
               similarityScore: dupCheck.similarityScore
             };
           }
-          Logger.log(`Duplicate detected during Gemini generation (${dupCheck.details}). Retrying...`);
-        } catch (e) {
-          Logger.log(`Inner JSON parsing error from ${modelName}: ` + e.message);
+          Logger.log(`Duplicate detected (score ${dupCheck.similarityScore}): "${dupCheck.highestMatch ? dupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}...". Retrying...`);
+          lastErrDetail = `All attempts flagged as duplicates (last score: ${dupCheck.similarityScore})`;
         }
         retries--;
 
       } else if (responseCode === 503) {
-        // Model overloaded — short sleep then try next model immediately
+        lastErrDetail = `${modelName} HTTP 503: Model overloaded`;
         Logger.log(`Model ${modelName} returned HTTP 503 (overloaded). Waiting 3s then trying next model...`);
         Utilities.sleep(3000);
         break;
