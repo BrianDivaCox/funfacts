@@ -2,6 +2,18 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [3.6.0] - 2026-07-30
+
+### Fixed
+- **Execution timeout protection**: Added a 5-minute runtime cap with time checks both at the model loop level and inside each retry — the script now bails out gracefully before hitting Google's hard 6-minute limit.
+- **30-second `deadline` on every UrlFetch call**: Prevents any single hanging network request from eating all remaining execution time.
+- **JSON parse crash on truncated response**: Wrapped the top-level `JSON.parse(response.getContentText())` in its own try/catch so a truncated/malformed HTTP body is caught, logged, and retried — it no longer crashes the whole run.
+- **Guard for empty/blocked candidates**: Added check for missing `candidates[0].content` before trying to read the response text (handles Gemini safety blocks).
+- **503 (overloaded) handled separately**: On a 503 the script now sleeps 3s then immediately jumps to the next model, instead of burning retries.
+- **Retries reduced from 3 → 2 per model**: Keeps total worst-case runtime well inside the 6-minute limit.
+- **Rate limit sleep reduced from 4s → 3s**: Slightly faster recovery.
+- Deployed Web App API version 19 (`AKfycbxPBnKn_ZocSAJKkl7pI4DpHouHj8o3cQIt9NvzlNtpSzvkc1ez_PxwuGkuNGQC-T4`).
+
 ## [3.5.0] - 2026-07-24
 
 ### Fixed

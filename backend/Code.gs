@@ -446,12 +446,23 @@ function generateUniqueFactWithGemini(providedApiKey) {
   ];
 
   let lastErrDetail = "";
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 5 * 60 * 1000; // 5 minute safety cap (Apps Script max is 6 min)
 
   for (const modelName of modelsToTry) {
+    // Bail out early if we're close to the execution time limit
+    if (Date.now() - startTime > MAX_RUNTIME_MS) {
+      Logger.log("Approaching execution time limit — stopping model loop early.");
+      break;
+    }
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
-    let retries = 3;
+    let retries = 2; // Reduced from 3 → 2 to stay within execution time limit
     while (retries > 0) {
+      // Time-guard inside retry loop too
+      if (Date.now() - startTime > MAX_RUNTIME_MS) break;
+
       const randomTopic = topicAreas[Math.floor(Math.random() * topicAreas.length)];
       
       const systemPrompt = `You are a world-class fun fact and trivia curator.
@@ -484,16 +495,40 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
         }
       };
 
-      const response = UrlFetchApp.fetch(apiUrl, {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
+      let response;
+      try {
+        response = UrlFetchApp.fetch(apiUrl, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify(payload),
+          muteHttpExceptions: true,
+          deadline: 30  // 30-second timeout per request — prevents hanging
+        });
+      } catch (fetchErr) {
+        Logger.log(`Network error calling ${modelName}: ${fetchErr.message}. Trying next model.`);
+        break; // Skip to next model on network failure
+      }
 
       const responseCode = response.getResponseCode();
+
       if (responseCode === 200) {
-        const resData = JSON.parse(response.getContentText());
+        let resData;
+        try {
+          resData = JSON.parse(response.getContentText());
+        } catch (parseErr) {
+          // Truncated or malformed top-level response — skip this retry
+          Logger.log(`JSON parsing error on response from ${modelName}: ${parseErr.message}`);
+          retries--;
+          continue;
+        }
+
+        // Guard against empty/blocked candidates
+        if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
+          Logger.log(`${modelName} returned no usable candidates (possible safety block). Retrying...`);
+          retries--;
+          continue;
+        }
+
         const rawText = resData.candidates[0].content.parts[0].text;
         const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
         
@@ -512,33 +547,37 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
           }
           Logger.log(`Duplicate detected during Gemini generation (${dupCheck.details}). Retrying...`);
         } catch (e) {
-          Logger.log("JSON parsing error on response: " + e.message);
+          Logger.log(`Inner JSON parsing error from ${modelName}: ` + e.message);
         }
         retries--;
+
+      } else if (responseCode === 503) {
+        // Model overloaded — short sleep then try next model immediately
+        Logger.log(`Model ${modelName} returned HTTP 503 (overloaded). Waiting 3s then trying next model...`);
+        Utilities.sleep(3000);
+        break;
+
+      } else if (responseCode === 429) {
+        // Rate limit — brief wait and retry same model once
+        lastErrDetail = response.getContentText();
+        Logger.log(`Rate limit hit on ${modelName} (HTTP 429). Waiting 3s...`);
+        Utilities.sleep(3000);
+        retries--;
+
       } else {
+        // 400, 404, or other hard error — skip to next model immediately
         lastErrDetail = response.getContentText();
         try {
           const errObj = JSON.parse(lastErrDetail);
-          if (errObj.error && errObj.error.message) {
-            lastErrDetail = errObj.error.message;
-          }
+          if (errObj.error && errObj.error.message) lastErrDetail = errObj.error.message;
         } catch (e) {}
-        
-        // Handle 429 Rate Limit / Quota Exceeded gracefully with backoff
-        if (responseCode === 429 || lastErrDetail.indexOf("Quota exceeded") !== -1 || lastErrDetail.indexOf("rate-limits") !== -1) {
-          Logger.log(`Rate limit/Quota hit (HTTP ${responseCode}). Pausing 4 seconds for quota bucket reset...`);
-          Utilities.sleep(4000);
-          retries--;
-          continue;
-        }
-
         Logger.log(`Model ${modelName} returned HTTP ${responseCode}: ${lastErrDetail}`);
-        break; // try next model if 404 or 400
+        break;
       }
     }
   }
 
-  throw new Error(`Gemini API Error: Quota or rate limit exceeded. Please wait 10 seconds and try again. Detail: ${lastErrDetail}`);
+  throw new Error(`Could not generate a non-duplicate fact after multiple attempts. Last detail: ${lastErrDetail}`);
 }
 
 /**
