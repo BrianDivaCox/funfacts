@@ -535,8 +535,13 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
           deadline: 30  // 30-second timeout per request — prevents hanging
         });
       } catch (fetchErr) {
-        Logger.log(`Network error calling ${modelName}: ${fetchErr.message}. Trying next model.`);
-        break; // Skip to next model on network failure
+        const errMsg = fetchErr.message || "";
+        // Detect Google Apps Script UrlFetch daily/rate quota exhausted
+        if (errMsg.indexOf("urlfetch") !== -1 || errMsg.indexOf("too many times") !== -1) {
+          throw new Error("Google Apps Script UrlFetch quota exceeded for today. This resets at midnight Pacific time. Please try again tomorrow or wait a few minutes and retry.");
+        }
+        Logger.log(`Network error calling ${modelName}: ${errMsg}. Trying next model.`);
+        break; // Skip to next model on other network failures
       }
 
       const responseCode = response.getResponseCode();
