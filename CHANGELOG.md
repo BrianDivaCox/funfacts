@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.0.4] - 2026-07-30
+
+### Fixed
+- **GitHub Actions Syntax**: Fixed `Unrecognized named-value: 'secrets'` error in `.github/workflows/daily_automation.yml` by evaluating `GEMINI_API_KEY` via shell environment variable check.
+
 ## [4.0.3] - 2026-07-30
 
 ### Fixed

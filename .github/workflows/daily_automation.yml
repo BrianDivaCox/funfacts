@@ -18,17 +18,21 @@ jobs:
           node-version: '24'
 
       - name: Validate GEMINI_API_KEY Secret
-        if: ${{ secrets.GEMINI_API_KEY == '' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "❌ ERROR: GEMINI_API_KEY secret is missing in GitHub Repository Secrets!"
-          echo "------------------------------------------------------------------------"
-          echo "Please follow these 4 quick steps to add your API key:"
-          echo "1. Go to your repo: https://github.com/BrianDivaCox/funfacts/settings/secrets/actions"
-          echo "2. Click 'New repository secret'"
-          echo "3. Name: GEMINI_API_KEY"
-          echo "4. Value: Paste your Gemini API Key (starts with AIzaSy...)"
-          echo "------------------------------------------------------------------------"
-          exit 1
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "❌ ERROR: GEMINI_API_KEY secret is missing in GitHub Repository Secrets!"
+            echo "------------------------------------------------------------------------"
+            echo "Please follow these 4 quick steps to add your API key:"
+            echo "1. Go to your repo: https://github.com/BrianDivaCox/funfacts/settings/secrets/actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: GEMINI_API_KEY"
+            echo "4. Value: Paste your Gemini API Key (starts with AIzaSy...)"
+            echo "------------------------------------------------------------------------"
+            exit 1
+          fi
+          echo "✅ GEMINI_API_KEY secret verified!"
 
       - name: Run Daily Fun Fact Automation
         env:
