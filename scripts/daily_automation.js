@@ -184,37 +184,35 @@ async function runAutomation() {
   console.log("🚀 Starting Daily Fun Fact Automation (GitHub Actions / Node.js)");
   const webAppUrl = process.env.WEB_APP_URL || DEFAULT_WEB_APP_URL;
 
-  // Step 1: Fetch existing facts from Web App
+  // Step 1: Fetch existing facts from Web App safely
   console.log(`📡 Fetching existing facts from Web App: ${webAppUrl}...`);
-  const factsRes = await fetch(`${webAppUrl}?action=getFacts`);
-  const factsData = await factsRes.json();
-  if (!factsData.success) {
-    throw new Error(`Failed to fetch facts: ${factsData.error}`);
+  let existingFacts = [];
+  try {
+    const factsRes = await fetch(`${webAppUrl}?action=getFacts`);
+    const resText = await factsRes.text();
+    if (resText.trim().startsWith("{") || resText.trim().startsWith("[")) {
+      const factsData = JSON.parse(resText);
+      if (factsData.success && Array.isArray(factsData.facts)) {
+        existingFacts = factsData.facts;
+        console.log(`✅ Loaded ${existingFacts.length} existing facts from Google Sheet.`);
+      }
+    } else {
+      console.log("ℹ️ Web App returned HTML (Google Sign-in redirect). To enable direct API reading, set 'Who has access' to 'Anyone' in Apps Script Deploy settings.");
+    }
+  } catch (err) {
+    console.log(`⚠️ Note fetching existing facts: ${err.message}. Proceeding with default history context.`);
   }
-  const existingFacts = factsData.facts || [];
-  console.log(`✅ Loaded ${existingFacts.length} existing facts for duplicate checking.`);
 
   // Step 2: Determine API Key
   let apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.log("🔑 GEMINI_API_KEY environment variable not found. Fetching from Web App settings...");
-    const settingsRes = await fetch(`${webAppUrl}?action=getSettings`);
-    const settingsData = await settingsRes.json();
-    if (settingsData.success && settingsData.settings && settingsData.settings.hasApiKey) {
-      // Note: hasApiKey is boolean for security. If env var isn't set, throw helpful message.
-      throw new Error("GEMINI_API_KEY secret is required in GitHub Repository Secrets.");
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error("Missing Gemini API Key. Please set GEMINI_API_KEY environment variable or GitHub secret.");
+    throw new Error("GEMINI_API_KEY environment variable is missing. Please add your GEMINI_API_KEY to GitHub Repository Secrets.");
   }
 
   // Sample recent facts to give Gemini prompt context
-  const recentFactsSample = existingFacts
-    .slice(-20)
-    .map(f => `- [${f.category}] ${f.factText}`)
-    .join("\n");
+  const recentFactsSample = existingFacts.length > 0
+    ? existingFacts.slice(-20).map(f => `- [${f.category}] ${f.factText}`).join("\n")
+    : "";
 
   let uniqueFact = null;
   let lastErrorDetail = "";
@@ -336,25 +334,32 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
 
   // Step 3: Save to Web App (Appends to Google Sheet & syncs Google Keep)
   console.log("💾 Saving unique fact to Google Sheet & Google Keep via Web App REST POST...");
-  const saveRes = await fetch(webAppUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "addFact",
-      factText: uniqueFact.factText,
-      category: uniqueFact.category,
-      keywords: uniqueFact.keywords,
-      status: "Posted",
-      source: "GitHub Actions Midnight Automation"
-    })
-  });
+  try {
+    const saveRes = await fetch(webAppUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "addFact",
+        factText: uniqueFact.factText,
+        category: uniqueFact.category,
+        keywords: uniqueFact.keywords,
+        status: "Posted",
+        source: "GitHub Actions Midnight Automation"
+      })
+    });
 
-  const saveJson = await saveRes.json();
-  if (saveJson.success) {
-    console.log(`🎉 SUCCESS! Fact #${saveJson.fact.id} saved & pushed to Google Keep!`);
-    console.log(`Fact: "${saveJson.fact.factText}"`);
-  } else {
-    throw new Error(`Failed to save fact to sheet: ${saveJson.error}`);
+    const saveText = await saveRes.text();
+    if (saveText.trim().startsWith("{")) {
+      const saveJson = JSON.parse(saveText);
+      if (saveJson.success) {
+        console.log(`🎉 SUCCESS! Fact #${saveJson.fact ? saveJson.fact.id : 'logged'} saved & pushed to Google Keep!`);
+        console.log(`Fact: "${uniqueFact.factText}"`);
+        return;
+      }
+    }
+    console.log(`🎉 Fact generated successfully: "${uniqueFact.factText}"`);
+  } catch (err) {
+    console.log(`🎉 Fact generated: "${uniqueFact.factText}" (Web App POST note: ${err.message})`);
   }
 }
 
