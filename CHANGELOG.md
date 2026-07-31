@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.0.3] - 2026-07-30
+
+### Fixed
+- **API Key Google Sheet Sync**: Updated `saveSettings()` in `app.js` to automatically POST the `GEMINI_API_KEY` to the Google Sheet `Settings` tab (Cell B2) whenever saved in the Web Dashboard.
+
 ## [4.0.2] - 2026-07-30
 
 ### Fixed

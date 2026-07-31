@@ -1852,13 +1852,32 @@ class FactVaultApp {
     this.updateStatusBadge();
   }
 
-  saveSettings() {
+  async saveSettings() {
     this.settings.apiKey = document.getElementById("settingApiKey").value.trim();
     this.settings.scriptUrl = document.getElementById("settingScriptUrl").value.trim();
     this.settings.strictnessThreshold = parseInt(document.getElementById("settingStrictness").value, 10) / 100;
     
     localStorage.setItem("factvault_settings", JSON.stringify(this.settings));
     this.updateStatusBadge();
+
+    if (this.settings.scriptUrl && this.settings.apiKey) {
+      try {
+        await fetch(this.settings.scriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "saveSetting",
+            key: "GEMINI_API_KEY",
+            value: this.settings.apiKey
+          })
+        });
+        alert("Settings saved to local storage AND synced to Google Sheet cell B2!");
+        return;
+      } catch (err) {
+        console.warn("Could not sync key to Google Sheet:", err);
+      }
+    }
+
     alert("Settings saved successfully!");
   }
 
