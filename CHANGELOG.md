@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.1.1] - 2026-07-30
+
+### Fixed
+- **Null Safety in Google Tasks & Keep Integration**: Fixed `TypeError: Cannot read properties of undefined (reading 'trim')` by adding strict null/type validation to `postToGoogleTasks()` and `postToGoogleKeep()`.
+
 ## [4.1.0] - 2026-07-30
 
 ### Added

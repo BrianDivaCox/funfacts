@@ -860,7 +860,19 @@ function saveFactToSheet(factObj) {
  * Automatically creates a new Task in your Google Tasks App under "FunFacts" list!
  */
 function postToGoogleTasks(factText, category) {
-  let cleanFact = factText.trim();
+  let textToUse = "";
+  let catToUse = category || "General";
+  if (typeof factText === "string") {
+    textToUse = factText;
+  } else if (factText && typeof factText === "object" && factText.factText) {
+    textToUse = factText.factText;
+    catToUse = factText.category || catToUse;
+  } else {
+    textToUse = String(factText || "");
+  }
+
+  let cleanFact = textToUse.trim();
+  if (!cleanFact) return { success: false, error: "Empty fact text" };
   if (!cleanFact.toLowerCase().includes("#funfact")) {
     cleanFact += " #funfact";
   }
@@ -887,7 +899,7 @@ function postToGoogleTasks(factText, category) {
 
     const taskObj = {
       title: cleanFact,
-      notes: `Category: #${category || "Trivia"} | Added by FactVault AI`
+      notes: `Category: #${catToUse} | Added by FactVault AI`
     };
     
     const createdTask = Tasks.Tasks.insert(taskObj, taskListId);
@@ -905,14 +917,25 @@ function postToGoogleTasks(factText, category) {
 function postToGoogleKeep(factText, category) {
   const dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   
-  // Clean & ensure #funfact tag
-  let cleanFact = factText.trim();
+  let textToUse = "";
+  let catToUse = category || "General";
+  if (typeof factText === "string") {
+    textToUse = factText;
+  } else if (factText && typeof factText === "object" && factText.factText) {
+    textToUse = factText.factText;
+    catToUse = factText.category || catToUse;
+  } else {
+    textToUse = String(factText || "");
+  }
+
+  let cleanFact = textToUse.trim();
+  if (!cleanFact) return { success: false, error: "Empty fact text" };
   if (!cleanFact.toLowerCase().includes("#funfact")) {
     cleanFact += " #funfact";
   }
 
   // 1. Automatically push to Google Tasks App!
-  const taskResult = postToGoogleTasks(cleanFact, category);
+  const taskResult = postToGoogleTasks(cleanFact, catToUse);
 
   // 2. Format note content for Keep / Mail backup
   const formattedNoteContent = 
