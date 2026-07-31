@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.0.5] - 2026-07-30
+
+### Fixed
+- **Automatic Google Tasks & Keep Sync on `saveFactToSheet`**: Updated `saveFactToSheet` in `Code.gs` to automatically invoke `postToGoogleKeep()` and `postToGoogleTasks()` whenever any new fact is appended to the sheet.
+- **Web App Access Diagnostics**: Updated `daily_automation.js` to log explicit instructions if Web App POST returns HTTP 401 sign-in redirect.
+
 ## [4.0.4] - 2026-07-30
 
 ### Fixed

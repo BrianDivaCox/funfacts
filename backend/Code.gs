@@ -661,9 +661,18 @@ function saveFactToSheet(factObj) {
     throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}..."`);
   }
 
-  const id = "FACT-" + Date.now();
-  const dateStr = new Date().toISOString();
-  const keywordsStr = Array.isArray(factObj.keywords) ? factObj.keywords.join(", ") : String(factObj.keywords || "");
+  // Automatically push to Google Tasks & Google Keep if not already done
+  let keepNoteId = factObj.keepNoteId || "";
+  if (!keepNoteId) {
+    try {
+      const keepRes = postToGoogleKeep(factObj.factText, factObj.category);
+      if (keepRes && keepRes.keepNoteId) {
+        keepNoteId = keepRes.keepNoteId;
+      }
+    } catch (kErr) {
+      Logger.log("Notice: postToGoogleKeep during saveFactToSheet: " + kErr.message);
+    }
+  }
 
   sheet.appendRow([
     id,
@@ -673,7 +682,7 @@ function saveFactToSheet(factObj) {
     keywordsStr,
     factObj.similarityScore || 0,
     factObj.status || "Queued",
-    factObj.keepNoteId || "",
+    keepNoteId,
     factObj.source || "Gemini"
   ]);
 
@@ -684,7 +693,8 @@ function saveFactToSheet(factObj) {
     category: factObj.category || "General",
     keywords: factObj.keywords,
     similarityScore: factObj.similarityScore || 0,
-    status: factObj.status || "Queued"
+    status: factObj.status || "Queued",
+    keepNoteId: keepNoteId
   };
 }
 

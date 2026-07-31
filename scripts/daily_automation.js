@@ -352,14 +352,17 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
     if (saveText.trim().startsWith("{")) {
       const saveJson = JSON.parse(saveText);
       if (saveJson.success) {
-        console.log(`🎉 SUCCESS! Fact #${saveJson.fact ? saveJson.fact.id : 'logged'} saved & pushed to Google Keep!`);
+        console.log(`🎉 SUCCESS! Fact #${saveJson.fact ? saveJson.fact.id : 'logged'} saved to Google Sheet & pushed to Google Tasks/Keep!`);
         console.log(`Fact: "${uniqueFact.factText}"`);
         return;
       }
     }
-    console.log(`🎉 Fact generated successfully: "${uniqueFact.factText}"`);
+    console.log(`⚠️ Web App POST returned HTTP ${saveRes.status} (non-JSON response).`);
+    console.log("ℹ️ To allow external API POST access, open Apps Script -> Deploy -> Manage Deployments -> Edit -> set 'Who has access' to 'Anyone'.");
+    console.log(`Fact generated: "${uniqueFact.factText}"`);
   } catch (err) {
-    console.log(`🎉 Fact generated: "${uniqueFact.factText}" (Web App POST note: ${err.message})`);
+    console.log(`⚠️ Web App POST notice: ${err.message}`);
+    console.log(`Fact generated: "${uniqueFact.factText}"`);
   }
 }
 
