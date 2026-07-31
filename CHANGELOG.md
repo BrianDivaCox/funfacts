@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.0.2] - 2026-07-30
+
+### Fixed
+- **Updated GitHub Actions runner to Node.js 24**: Fixed Node.js 20 deprecation warning in `.github/workflows/daily_automation.yml`.
+- **Added Secret Validation Step**: Workflow now checks for `secrets.GEMINI_API_KEY` upfront and displays a clear 4-step setup guide with direct link if the secret is missing.
+
 ## [4.0.0] - 2026-07-30
 
 ### Added
