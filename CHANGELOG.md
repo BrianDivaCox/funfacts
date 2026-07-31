@@ -2,6 +2,19 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.1.0] - 2026-07-30
+
+### Added
+- **Creative Artistic Google Sheet Theme Engine (`formatSheetArtistically()`)**:
+  - **Midnight Violet Header** (`#1e1b4b` with bold white text)
+  - **Soft Alternating Row Contrast** (`#ffffff` and `#f8fafc`)
+  - **Pill Badges**:
+    - Emerald Green (`#dcfce7`) for `Posted` / `Used` status
+    - Soft Rose Red (`#fee2e2`) for `Duplicate (Flagged)` status
+    - Soft Indigo (`#e0e7ff`) for Category tags
+  - **Auto Text Wrapping**: Enabled for Fact Text (480px width) and Keywords (240px width) for effortless reading without text cut-off.
+  - **New Menu Item**: Added `🎨 Apply Beautiful Theme & Formatting` to `🎯 Fun Fact Tracker` menu in Google Sheets.
+
 ## [4.0.5] - 2026-07-30
 
 ### Fixed

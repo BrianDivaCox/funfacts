@@ -24,6 +24,7 @@ function onOpen() {
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
     .addItem("🔍 Re-Scan All Facts for Duplicates", "reScanAllDuplicates")
+    .addItem("🎨 Apply Beautiful Theme & Formatting", "formatSheetArtistically")
     .addToUi();
 }
 
@@ -78,7 +79,10 @@ function initSpreadsheet() {
     settingsSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#1e293b").setFontColor("#f8fafc");
   }
 
-  return { success: true, message: "Spreadsheet structure & 64 historical facts initialized" };
+  // Apply creative artistic styling
+  formatSheetArtistically();
+
+  return { success: true, message: "Spreadsheet structure & historical facts initialized with beautiful theme" };
 }
 
 function seed64FactsToSheet(sheet) {
@@ -156,11 +160,164 @@ function reScanAllDuplicates() {
 
   SpreadsheetApp.flush(); // Commit all changes
 
-  const msg = `✅ Re-Scan Complete!\n\n📊 Rows scanned: ${data.length}\n🔴 Duplicates found: ${duplicatesFound}\n🔧 Rows corrected: ${corrected}\n\nDuplicates are highlighted in red.`;
+  // Apply beautiful formatting after rescan
+  formatSheetArtistically();
+
+  const msg = `✅ Re-Scan Complete!\n\n📊 Rows scanned: ${data.length}\n🔴 Duplicates found: ${duplicatesFound}\n🔧 Rows corrected: ${corrected}\n\nSheet updated with beautiful theme!`;
   Logger.log(msg);
   if (ui) ui.alert("🔍 Duplicate Re-Scan Results", msg, ui.ButtonSet.OK);
 
   return { success: true, scanned: data.length, duplicatesFound, corrected };
+}
+
+/**
+ * Creative Artistic Formatting Engine for Google Sheets
+ * Formats the Fact Log & Settings tabs with modern dark violet headers,
+ * status/category badges, text wrapping, and clean typography.
+ */
+function formatSheetArtistically() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // -------------------------------------------------------------
+  // 1. FACT LOG SHEET STYLING
+  // -------------------------------------------------------------
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (sheet) {
+    const lastRow = sheet.getLastRow();
+    const lastCol = 9; // Col A to I
+
+    // Column Widths
+    sheet.setColumnWidth(1, 150); // ID
+    sheet.setColumnWidth(2, 160); // Date Added
+    sheet.setColumnWidth(3, 480); // Fact Text
+    sheet.setColumnWidth(4, 140); // Category
+    sheet.setColumnWidth(5, 240); // Keywords
+    sheet.setColumnWidth(6, 120); // Similarity Score
+    sheet.setColumnWidth(7, 150); // Status
+    sheet.setColumnWidth(8, 120); // Keep Note ID
+    sheet.setColumnWidth(9, 160); // Source
+
+    // Row Height & Header Formatting (Row 1)
+    sheet.setRowHeight(1, 42);
+    sheet.setFrozenRows(1);
+
+    const headerRange = sheet.getRange(1, 1, 1, lastCol);
+    headerRange
+      .setBackground("#1e1b4b")               // Midnight Violet
+      .setFontColor("#ffffff")                // Crisp White
+      .setFontWeight("bold")
+      .setFontFamily("Trebuchet MS")
+      .setFontSize(11)
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    // Fact Text & Category Headers left-aligned for readability
+    sheet.getRange(1, 3).setHorizontalAlignment("left");
+    sheet.getRange(1, 5).setHorizontalAlignment("left");
+
+    if (lastRow >= 2) {
+      const dataRange = sheet.getRange(2, 1, lastRow - 1, lastCol);
+
+      // Base Data Formatting
+      dataRange
+        .setFontFamily("Arial")
+        .setFontSize(10)
+        .setFontColor("#334155")              // Slate Navy Text
+        .setVerticalAlignment("middle");
+
+      // Text Wrapping
+      sheet.getRange(2, 3, lastRow - 1, 1).setWrap(true); // Col C (Fact Text)
+      sheet.getRange(2, 5, lastRow - 1, 1).setWrap(true); // Col E (Keywords)
+
+      // Alignment
+      sheet.getRange(2, 1, lastRow - 1, 2).setHorizontalAlignment("center"); // ID & Date
+      sheet.getRange(2, 4, lastRow - 1, 1).setHorizontalAlignment("center"); // Category
+      sheet.getRange(2, 6, lastRow - 1, 4).setHorizontalAlignment("center"); // Score, Status, Keep ID, Source
+
+      // Similarity Score Number Format (Percent)
+      sheet.getRange(2, 6, lastRow - 1, 1).setNumberFormat("0.0%");
+
+      // Row-by-Row Custom Badge & Alternating Colors
+      const dataValues = dataRange.getValues();
+      for (let i = 0; i < dataValues.length; i++) {
+        const rowNum = i + 2;
+        sheet.setRowHeight(rowNum, 36); // Generous touch height
+
+        const statusVal = String(dataValues[i][6] || "").toLowerCase();
+
+        // Alternating row background
+        const isEven = i % 2 === 0;
+        const baseBg = isEven ? "#ffffff" : "#f8fafc";
+        sheet.getRange(rowNum, 1, 1, lastCol).setBackground(baseBg);
+
+        // Category Badge Style (Col D)
+        sheet.getRange(rowNum, 4)
+          .setBackground("#e0e7ff")           // Soft Indigo
+          .setFontColor("#3730a3")            // Dark Indigo
+          .setFontWeight("bold");
+
+        // Status Badge Style (Col G)
+        const statusRange = sheet.getRange(rowNum, 7);
+        if (statusVal.includes("duplicate")) {
+          statusRange
+            .setBackground("#fee2e2")         // Soft Rose
+            .setFontColor("#b91c1c")          // Dark Rose
+            .setFontWeight("bold");
+          sheet.getRange(rowNum, 1, 1, lastCol).setBackground("#fef2f2"); // Subtle red row tint
+        } else if (statusVal.includes("posted") || statusVal.includes("used")) {
+          statusRange
+            .setBackground("#dcfce7")         // Soft Emerald
+            .setFontColor("#15803d")          // Dark Emerald
+            .setFontWeight("bold");
+        } else if (statusVal.includes("queued")) {
+          statusRange
+            .setBackground("#fef3c7")         // Soft Amber
+            .setFontColor("#b45309")          // Dark Amber
+            .setFontWeight("bold");
+        }
+      }
+
+      // Soft borders between rows
+      dataRange.setBorder(null, null, true, null, null, true, "#e2e8f0", SpreadsheetApp.BorderStyle.SOLID);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 2. SETTINGS SHEET STYLING
+  // -------------------------------------------------------------
+  const settingsSheet = ss.getSheetByName(SETTINGS_SHEET);
+  if (settingsSheet) {
+    const sLastRow = settingsSheet.getLastRow();
+    settingsSheet.setColumnWidth(1, 220); // Setting Key
+    settingsSheet.setColumnWidth(2, 380); // Setting Value
+    settingsSheet.setRowHeight(1, 40);
+
+    const sHeader = settingsSheet.getRange(1, 1, 1, 2);
+    sHeader
+      .setBackground("#1e1b4b")
+      .setFontColor("#ffffff")
+      .setFontWeight("bold")
+      .setFontFamily("Trebuchet MS")
+      .setFontSize(11)
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center");
+
+    if (sLastRow >= 2) {
+      const sData = settingsSheet.getRange(2, 1, sLastRow - 1, 2);
+      sData
+        .setFontFamily("Arial")
+        .setFontSize(10)
+        .setFontColor("#1e293b")
+        .setVerticalAlignment("middle");
+
+      settingsSheet.getRange(2, 1, sLastRow - 1, 1).setFontWeight("bold").setBackground("#f1f5f9");
+      settingsSheet.getRange(2, 2, sLastRow - 1, 1).setBackground("#ffffff");
+      sData.setBorder(true, true, true, true, true, true, "#cbd5e1", SpreadsheetApp.BorderStyle.SOLID);
+    }
+  }
+
+  SpreadsheetApp.flush();
+  return { success: true, message: "Artistic theme applied successfully!" };
 }
 
 /**
