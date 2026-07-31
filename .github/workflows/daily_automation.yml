@@ -1,0 +1,24 @@
+name: Nightly Midnight Fun Fact Automation
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs automatically every night at 12:00 AM UTC (Midnight)
+  workflow_dispatch:      # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Daily Fun Fact Automation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxy4eoe4_VceSJrSxzX-tstmnLuRGKKkMr_VNoarVgRf5Qh-ByEGQwwJb9qqtmSIpI/exec"
+        run: node scripts/daily_automation.js

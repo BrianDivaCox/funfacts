@@ -2249,20 +2249,36 @@ class FactVaultApp {
     card.style.display = "block";
     document.getElementById("genFactText").textContent = "⚡ Contacting Gemini AI & running duplicate verification...";
 
-    // Mock / Live Gemini Call
+    // Live Gemini Call
     let candidate = null;
     if (this.settings.apiKey) {
       try {
-        const recentSample = this.facts.slice(-30).map(f => `- ${f.factText}`).join("\n");
+        const topicAreas = [
+          "Deep Ocean Biology & Bioluminescence", "Quantum Physics & Particle Science", "Volcanology & Geological Wonders",
+          "Meteorology & Extreme Weather", "Entomology & Insect Behavior", "Mycology & Fungi Facts",
+          "Botany & Carnivorous Plants", "Genetics & DNA Discoveries", "Paleontology & Prehistoric Life",
+          "Astronomy & Exoplanets", "Black Holes & Neutron Stars", "Mars & Planetary Exploration",
+          "Ancient Calendars & Timekeeping", "Ancient History & Archaeology", "Medieval Engineering & Castles",
+          "Ancient Rome & Greece", "Viking Age & Norse Myths", "Cold War Secrets & Spy Tech",
+          "Ancient Egypt & Pharaohs", "Aztec & Mayan Civilizations", "Silk Road & Trade History",
+          "Neuroscience & Brain Quirks", "Sleep Science & Dreams", "Human Senses & Perception",
+          "Psychology & Optical Illusions", "Medicine & Surgery History", "Food Chemistry & Culinary Trivia",
+          "Linguistics & Word Origins", "Art History & Famous Forgeries", "Music Theory & Instrument Origins",
+          "Film History & Silent Movies", "World Architecture & Megastructures", "Aviation & Air Travel History",
+          "Cryptography & Code Breaking", "Sports World Records & Oddities", "Mathematics & Number Theory"
+        ];
+        const randomTopic = topicAreas[Math.floor(Math.random() * topicAreas.length)];
+        const recentSample = this.facts.slice(-20).map(f => `- ${f.factText}`).join("\n");
         const prompt = `Generate 1 daily fun fact for social media and Google Keep.
 CONSTRAINTS:
 1. Must be UNDER 180 CHARACTERS total.
 2. Simple, easy, fun tone with 1-2 emojis.
 3. Must end with #funfact
-4. Do NOT generate anything similar to previously used facts:\n${recentSample}
-Return JSON format: {"factText": "... #funfact", "category": "Animals|Science|History|Space|Tech", "keywords": ["k1","k2"]}`;
+4. TOPIC DIRECTION: Focus specifically on: ${randomTopic}
+5. Do NOT generate anything similar to previously used facts:\n${recentSample}
+Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.split(' ')[0]}", "keywords": ["k1","k2"]}`;
         
-        const modelsToTry = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+        const modelsToTry = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"];
         for (const modelName of modelsToTry) {
           try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.settings.apiKey}`, {
@@ -2276,10 +2292,10 @@ Return JSON format: {"factText": "... #funfact", "category": "Animals|Science|Hi
               const parsed = JSON.parse(rawText);
               candidate = {
                 factText: parsed.factText,
-                category: parsed.category || "General",
+                category: parsed.category || randomTopic.split(' ')[0],
                 keywords: parsed.keywords || this.extractKeywords(parsed.factText)
               };
-              if (candidate) break;
+              if (candidate && candidate.factText) break;
             }
           } catch (mErr) {
             console.warn(`Model ${modelName} call failed:`, mErr);

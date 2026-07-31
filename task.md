@@ -1,22 +1,9 @@
-# Task List: Fun Fact Tracker & Duplicate Prevention System v3.1.0
+# Task List — v4.0.0 GitHub Actions Midnight Automation Setup
 
-- [x] Initial setup: Create `task.md` and `CHANGELOG.md`
-- [x] Create initial project backup zip (`funfact_tracker_backup_v1.0.0.zip`)
-- [x] Build Google Apps Script backend (`backend/Code.gs` & `backend/appsscript.json`)
-- [x] Build Web Dashboard Frontend (`index.html`, `styles.css`, `app.js`)
-- [x] Create batch utility scripts (`start_dashboard.bat`, `backup_folder.bat`, `organize_files.bat`)
-- [x] Update Gemini prompt (< 180 chars, emojis, social format, `#funfact` hashtag)
-- [x] Align Google Keep note formatter with `FunFacts` list schema
-- [x] Import & index all 64 historical Google Keep `FunFacts` entries into database
-- [x] Fix browser localStorage cache synchronization to auto-populate all 64 facts
-- [x] Initialize Git repository, `.gitignore`, and create initial commit (`v1.4.0`)
-- [x] Add GitHub remote `https://github.com/BrianDivaCox/funfacts.git` and push `main` branch (`v1.4.1`)
-- [x] Add README.md & GitHub Pages live site deployment configuration (`v1.5.0`)
-- [x] Add `.nojekyll` for GitHub Pages & provide step-by-step setup guide (`v1.5.1`)
-- [x] Re-bind Apps Script & Web App deployment to `FunFacts Database` Google Sheet (`v1.9.0`)
-- [x] Add custom `🎯 Fun Fact Tracker` UI Menu to Google Sheet backend (`v2.0.0`)
-- [x] Integrate Google Tasks API (`postToGoogleTasks`) into backend & deploy (`v2.1.0`)
-- [x] Add UI popup alerts & error handling for missing API keys (`v2.2.0`)
-- [x] Enable support for Google AI Studio `AQ.Ab8...` API keys (`v2.4.0`)
-- [x] Add rate limit backoff delay & token optimization (`v3.1.0`)
-- [x] Update project walkthrough (`walkthrough.md`)
+- [x] Create project backup archive (`funfact_tracker_backup_v4.0.0.zip`)
+- [x] Create Node.js automation script (`scripts/daily_automation.js`)
+- [x] Create GitHub Action workflow file (`.github/workflows/daily_automation.yml`)
+- [x] Test the automation script locally to verify generation, duplicate checking, and web app saving
+- [x] Update `package.json` to version `4.0.0`
+- [x] Update `CHANGELOG.md` with v4.0.0 details
+- [x] Commit and push to GitHub repository (`BrianDivaCox/funfacts`)

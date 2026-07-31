@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.0.0] - 2026-07-30
+
+### Added
+- **GitHub Actions Midnight Automation (`.github/workflows/daily_automation.yml`)**: Fully automated daily midnight workflow running on GitHub Actions. Calls Gemini 3.6 Flash directly via Node.js (`scripts/daily_automation.js`), eliminating Google Apps Script `UrlFetch` daily rate limits completely!
+- **Node.js Automation Script (`scripts/daily_automation.js`)**: Standalone generator with full stemmed Levenshtein + Jaccard duplicate prevention engine. Reads facts from Web App, generates non-duplicate facts via Gemini API, and POSTs the result to Google Sheets & Google Keep.
+- **Enhanced Browser Dashboard Generator**: Updated client-side `runGeminiGenerator` in `app.js` with Gemini 3.x models (`gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`) and 36 topic domains.
+
 ## [3.6.1] - 2026-07-30
 
 ### Fixed
