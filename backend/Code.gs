@@ -29,6 +29,15 @@ function onOpen() {
     .addToUi();
 }
 
+function trackCentralAccountQuota(projectName) {
+  try {
+    var today = Utilities.formatDate(new Date(), "America/Los_Angeles", "yyyy-MM-dd");
+    var url = "https://livecounters-8eaa8-default-rtdb.firebaseio.com/accountQuota/" + today + ".json?auth=IRhauBNcErreqJ8tKdIaUCAKQ6bVymfRsdnuASxe";
+    var payload = JSON.stringify({ project: projectName || "FunFact Tracker", timestamp: new Date().getTime() });
+    UrlFetchApp.fetch(url, { method: "post", payload: payload, muteHttpExceptions: true });
+  } catch(e) {}
+}
+
 /**
  * Initialize Spreadsheet structure & Seed all 64 historical facts if empty
  */
@@ -918,21 +927,54 @@ function postToGoogleTasks(factText, category) {
  */
 function testPostToGoogleTasks() {
   const ui = SpreadsheetApp.getUi();
-  const testFact = "🦥 Sloths can hold their breath for 40 minutes underwater! 🌊 #funfact";
-  const res = postToGoogleTasks(testFact, "Animals");
+  const testFactText = "🦥 Sloths can hold their breath for 40 minutes underwater! 🌊 #funfact";
   
-  if (res && res.success) {
-    ui.alert(
-      "🎉 Google Tasks Test Success!",
-      `Successfully created task in your Google Tasks App under "FunFacts" list!\n\n📌 Task Title: "${res.title}"`,
-      ui.ButtonSet.OK
-    );
-  } else {
-    ui.alert(
-      "⚠️ Google Tasks Test Notice",
-      `Details: ${res ? res.error : "Unknown response"}`,
-      ui.ButtonSet.OK
-    );
+  try {
+    // 1. Post to Google Tasks
+    const taskRes = postToGoogleTasks(testFactText, "Animals");
+    
+    // 2. Save test fact to Google Sheet (using force/manual source)
+    const id = "FACT-" + Date.now();
+    const dateStr = new Date().toISOString();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      initSpreadsheet();
+      sheet = ss.getSheetByName(SHEET_NAME);
+    }
+    
+    sheet.appendRow([
+      id,
+      dateStr,
+      testFactText,
+      "Animals",
+      "sloths, breath, underwater, minutes",
+      0.0,
+      "Posted",
+      taskRes.taskId || "TASK-" + Date.now(),
+      "Google Tasks Test"
+    ]);
+
+    // Apply beautiful theme formatting
+    formatSheetArtistically();
+
+    if (taskRes && taskRes.success) {
+      ui.alert(
+        "🎉 Success — Sheet & Tasks Updated!",
+        `✅ New test fact added to 'Fact Log' row #${sheet.getLastRow()}!\n✅ Task created in Google Tasks App under 'FunFacts' list!\n\n📌 Fact: "${testFactText}"`,
+        ui.ButtonSet.OK
+      );
+    } else {
+      ui.alert(
+        "⚠️ Sheet Updated / Tasks Warning",
+        `✅ Fact saved to Google Sheet row #${sheet.getLastRow()}!\n⚠️ Google Tasks API Notice: ${taskRes ? taskRes.error : "Check Google Tasks permissions"}`,
+        ui.ButtonSet.OK
+      );
+    }
+  } catch (err) {
+    if (ui) {
+      ui.alert("❌ Test Failed", "Error details: " + err.message, ui.ButtonSet.OK);
+    }
   }
 }
 

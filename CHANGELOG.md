@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.1.3] - 2026-08-04
+
+### Fixed
+- **Enhanced `testPostToGoogleTasks`**: Updated test function in `Code.gs` to write the test fact to **BOTH** the Google Sheet `Fact Log` tab AND the Google Tasks App simultaneously, providing complete 1-click verification for both systems.
+
 ## [4.1.2] - 2026-07-30
 
 ### Added
