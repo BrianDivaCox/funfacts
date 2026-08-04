@@ -439,15 +439,32 @@ function checkDuplicate(targetFact, existingFactsList) {
       : extractKeywords(item.factText);
     const jaccardScore = calculateJaccardOverlap(targetKeywords, itemKeywords);
 
-    // Combined Weighted Score (Levenshtein + Keyword Overlap)
-    const combinedScore = Math.max((levScore * 0.5) + (jaccardScore * 0.5), jaccardScore * 0.9);
+    // Tier 4: Core Topic Overlap (Count of matching stemmed keywords)
+    let matchingKeywordCount = 0;
+    const targetSet = new Set(targetKeywords);
+    itemKeywords.forEach(k => {
+      if (targetSet.has(k)) matchingKeywordCount++;
+    });
+
+    // Combined Weighted Score (Maximum of Levenshtein, Jaccard, or Keyword Density)
+    let combinedScore = Math.max(levScore, jaccardScore);
+
+    // Core Topic Guard: If 3 or more significant keywords match (e.g., "wombat", "poop", "cube"), boost score
+    if (matchingKeywordCount >= 3) {
+      const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
+      combinedScore = Math.max(combinedScore, 0.55 + (densityScore * 0.45));
+    }
 
     if (combinedScore > maxScore) {
       maxScore = combinedScore;
       bestMatch = item;
-      if (levScore > 0.75) {
+      if (cleanTarget === cleanItem) {
+        matchReason = "Exact normalized text match";
+      } else if (matchingKeywordCount >= 3) {
+        matchReason = `Core topic match (${matchingKeywordCount} matching keywords: ${targetKeywords.filter(k => itemKeywords.includes(k)).join(', ')})`;
+      } else if (levScore > 0.70) {
         matchReason = `High textual similarity (${(levScore * 100).toFixed(1)}%)`;
-      } else if (jaccardScore > 0.6) {
+      } else if (jaccardScore > 0.5) {
         matchReason = `Significant keyword overlap (${(jaccardScore * 100).toFixed(1)}%)`;
       } else {
         matchReason = `Partial similarity score: ${(combinedScore * 100).toFixed(1)}%`;
@@ -455,7 +472,9 @@ function checkDuplicate(targetFact, existingFactsList) {
     }
   }
 
-  const threshold = parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.60;
+  // Threshold: default to 0.50 for strict duplicate prevention
+  const thresholdSetting = parseFloat(getSetting("STRICTNESS_THRESHOLD"));
+  const threshold = (thresholdSetting && !isNaN(thresholdSetting)) ? thresholdSetting : 0.50;
   const isDup = maxScore >= threshold;
 
   return {

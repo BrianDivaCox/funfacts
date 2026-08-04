@@ -165,14 +165,26 @@ function checkDuplicate(targetFact, existingFacts) {
       ? item.keywords.map(k => k.toLowerCase())
       : extractKeywords(item.factText);
     const jaccardScore = calculateJaccardOverlap(targetKeywords, itemKeywords);
-    const combinedScore = Math.max((levScore * 0.5) + (jaccardScore * 0.5), jaccardScore * 0.9);
+
+    // Tier 4: Core Topic Overlap (Count of matching stemmed keywords)
+    let matchingKeywordCount = 0;
+    const targetSet = new Set(targetKeywords);
+    itemKeywords.forEach(k => {
+      if (targetSet.has(k)) matchingKeywordCount++;
+    });
+
+    let combinedScore = Math.max(levScore, jaccardScore);
+    if (matchingKeywordCount >= 3) {
+      const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
+      combinedScore = Math.max(combinedScore, 0.55 + (densityScore * 0.45));
+    }
 
     if (combinedScore > maxScore) {
       maxScore = combinedScore;
       bestMatch = item;
     }
   }
-  const threshold = 0.60;
+  const threshold = 0.50;
   return {
     isDuplicate: maxScore >= threshold,
     similarityScore: parseFloat(maxScore.toFixed(3)),

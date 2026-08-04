@@ -2,6 +2,14 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.2.0] - 2026-08-04
+
+### Fixed & Enhanced
+- **Strict Core Topic Duplicate Prevention Engine**:
+  - Removed internal 0.9 penalty multiplier on keyword overlap scores.
+  - Added **Core Topic Match Guard**: automatically flags any fact sharing 3+ key stemmed keywords (e.g. `wombat` + `poop` + `cube`) as a duplicate regardless of phrasing differences.
+  - Lowered default strictness threshold from `0.65` to `0.50` across Google Apps Script, Node.js automation script, and Web Dashboard.
+
 ## [4.1.3] - 2026-08-04
 
 ### Fixed

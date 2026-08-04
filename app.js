@@ -2035,7 +2035,18 @@ class FactVaultApp {
         : this.extractKeywords(item.factText);
       const jaccard = this.calculateJaccardOverlap(targetKeywords, itemKeywords);
 
-      const combined = Math.max((lev * 0.5) + (jaccard * 0.5), jaccard * 0.9);
+      // Core Topic Overlap
+      let matchingKeywordCount = 0;
+      const targetSet = new Set(targetKeywords);
+      itemKeywords.forEach(k => {
+        if (targetSet.has(k)) matchingKeywordCount++;
+      });
+
+      let combined = Math.max(lev, jaccard);
+      if (matchingKeywordCount >= 3) {
+        const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
+        combined = Math.max(combined, 0.55 + (densityScore * 0.45));
+      }
 
       if (combined > maxCombinedScore) {
         maxCombinedScore = combined;
@@ -2045,7 +2056,8 @@ class FactVaultApp {
       }
     }
 
-    const isDup = maxCombinedScore >= this.settings.strictnessThreshold;
+    const threshold = this.settings.strictnessThreshold || 0.50;
+    const isDup = maxCombinedScore >= threshold;
 
     return {
       isDuplicate: isDup,
@@ -2055,7 +2067,7 @@ class FactVaultApp {
       keywordScore: bestKeyword,
       closestMatch: bestMatch,
       details: isDup 
-        ? `Flagged duplicate (Score ${(maxCombinedScore * 100).toFixed(1)}% >= Threshold ${(this.settings.strictnessThreshold * 100).toFixed(0)}%)` 
+        ? `Flagged duplicate (Score ${(maxCombinedScore * 100).toFixed(1)}% >= Threshold ${(threshold * 100).toFixed(0)}%)` 
         : `Unique fact (Highest match score ${(maxCombinedScore * 100).toFixed(1)}%)`
     };
   }
