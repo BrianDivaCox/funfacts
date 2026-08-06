@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.3.0] - 2026-08-05
+
+### Added
+- **1-Click Batch Generator (`generate5FreshFactsNow`)**: Added a 1-click menu action `✨ Generate 5 Fresh Fun Facts Now` in Google Sheets to instantly populate 5 brand new unique AI fun facts to both Google Sheets and Google Tasks.
+
 ## [4.2.1] - 2026-08-05
 
 ### Enhanced

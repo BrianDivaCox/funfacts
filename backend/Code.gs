@@ -21,6 +21,7 @@ function onOpen() {
   ui.createMenu("🎯 Fun Fact Tracker")
     .addItem("📊 Initialize / Seed Fact Log", "initSpreadsheet")
     .addItem("🧠 Run Daily Fun Fact Automation Now", "dailyMidnightTrigger")
+    .addItem("✨ Generate 5 Fresh Fun Facts Now", "generate5FreshFactsNow")
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
     .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
@@ -1018,6 +1019,41 @@ function testPostToGoogleTasks() {
     if (ui) {
       ui.alert("❌ Test Failed", "Error details: " + err.message, ui.ButtonSet.OK);
     }
+  }
+}
+
+/**
+ * Generate 5 Fresh Non-Duplicate Fun Facts Now
+ * Run from menu: 🎯 Fun Fact Tracker > ✨ Generate 5 Fresh Fun Facts Now
+ */
+function generate5FreshFactsNow() {
+  const ui = SpreadsheetApp.getUi();
+  const apiKey = getSetting("GEMINI_API_KEY");
+  if (!apiKey) {
+    if (ui) ui.alert("⚠️ Gemini API Key Missing", "Please enter your API key in cell B2 of the Settings tab.", ui.ButtonSet.OK);
+    return;
+  }
+
+  let count = 0;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const fact = generateUniqueFactWithGemini(apiKey);
+      fact.status = "Posted";
+      fact.source = "Batch Generator";
+      saveFactToSheet(fact);
+      count++;
+    } catch (e) {
+      Logger.log("Notice generating batch fact: " + e.message);
+    }
+  }
+
+  formatSheetArtistically();
+  if (ui) {
+    ui.alert(
+      "🎉 Fresh Facts Added!",
+      `Successfully generated and saved ${count} new unique fun facts to your Google Sheet 'Fact Log' & Google Tasks App!`,
+      ui.ButtonSet.OK
+    );
   }
 }
 
