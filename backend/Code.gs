@@ -907,35 +907,59 @@ function postToGoogleTasks(factText, category) {
   }
 
   try {
-    let taskListId = "@default";
+    let defaultTaskId = null;
+    let customTaskId = null;
+
+    // 1. Post to Primary "My Tasks" List (@default) so it's immediately visible on home screen
     try {
+      const mainTaskObj = {
+        title: cleanFact,
+        notes: `Category: #${catToUse} | Added by FactVault AI`
+      };
+      const createdMain = Tasks.Tasks.insert(mainTaskObj, "@default");
+      defaultTaskId = createdMain.id;
+      Logger.log("Successfully posted to primary Google Tasks list (@default): " + defaultTaskId);
+    } catch (mainErr) {
+      Logger.log("Notice posting to @default list: " + mainErr.message);
+    }
+
+    // 2. Also post to "FunFacts" custom list tab if present
+    try {
+      let funFactsListId = null;
       const taskLists = Tasks.Tasklists.list();
       if (taskLists && taskLists.items) {
         for (let i = 0; i < taskLists.items.length; i++) {
           if (taskLists.items[i].title.toLowerCase() === "funfacts") {
-            taskListId = taskLists.items[i].id;
+            funFactsListId = taskLists.items[i].id;
             break;
           }
         }
-        if (taskListId === "@default") {
+        if (!funFactsListId) {
           const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
-          taskListId = newList.id;
+          funFactsListId = newList.id;
         }
       }
-    } catch (e) {
-      Logger.log("Tasklist lookup fallback to default list: " + e.message);
+      if (funFactsListId) {
+        const customTaskObj = {
+          title: cleanFact,
+          notes: `Category: #${catToUse} | Added by FactVault AI`
+        };
+        const createdCustom = Tasks.Tasks.insert(customTaskObj, funFactsListId);
+        customTaskId = createdCustom.id;
+        Logger.log("Successfully posted to FunFacts list tab: " + customTaskId);
+      }
+    } catch (customErr) {
+      Logger.log("Notice posting to FunFacts list: " + customErr.message);
     }
 
-    const taskObj = {
-      title: cleanFact,
-      notes: `Category: #${catToUse} | Added by FactVault AI`
-    };
-    
-    const createdTask = Tasks.Tasks.insert(taskObj, taskListId);
-    Logger.log("Successfully created Google Task: " + createdTask.id);
-    return { success: true, taskId: createdTask.id, title: cleanFact };
+    const primaryId = defaultTaskId || customTaskId;
+    if (primaryId) {
+      return { success: true, taskId: primaryId, title: cleanFact };
+    } else {
+      return { success: false, error: "Could not insert task into Google Tasks" };
+    }
   } catch (err) {
-    Logger.log("Google Tasks API Notice: " + err.message);
+    Logger.log("Google Tasks API Error: " + err.message);
     return { success: false, error: err.message };
   }
 }

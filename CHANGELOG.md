@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.2.1] - 2026-08-05
+
+### Enhanced
+- **Dual Google Tasks Placement**: Updated `postToGoogleTasks()` to post new fun facts directly to your **Primary "My Tasks" List (`@default`)** as well as your custom `"FunFacts"` list tab. Facts now pop up immediately on your main Google Tasks home screen!
+
 ## [4.2.0] - 2026-08-04
 
 ### Fixed & Enhanced
