@@ -910,6 +910,7 @@ function postToGoogleTasks(factText, category) {
   try {
     let defaultTaskId = null;
     let customTaskId = null;
+    let lastError = "";
 
     // 1. Post to Primary "My Tasks" List (@default) so it's immediately visible on home screen
     try {
@@ -921,6 +922,7 @@ function postToGoogleTasks(factText, category) {
       defaultTaskId = createdMain.id;
       Logger.log("Successfully posted to primary Google Tasks list (@default): " + defaultTaskId);
     } catch (mainErr) {
+      lastError = mainErr.message;
       Logger.log("Notice posting to @default list: " + mainErr.message);
     }
 
@@ -950,6 +952,7 @@ function postToGoogleTasks(factText, category) {
         Logger.log("Successfully posted to FunFacts list tab: " + customTaskId);
       }
     } catch (customErr) {
+      if (!lastError) lastError = customErr.message;
       Logger.log("Notice posting to FunFacts list: " + customErr.message);
     }
 
@@ -957,7 +960,7 @@ function postToGoogleTasks(factText, category) {
     if (primaryId) {
       return { success: true, taskId: primaryId, title: cleanFact };
     } else {
-      return { success: false, error: "Could not insert task into Google Tasks" };
+      return { success: false, error: lastError || "Could not insert task into Google Tasks" };
     }
   } catch (err) {
     Logger.log("Google Tasks API Error: " + err.message);

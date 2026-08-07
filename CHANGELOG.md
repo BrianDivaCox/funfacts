@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.3.1] - 2026-08-07
+
+### Fixed
+- **Google Tasks Explicit OAuth Authorization**: Added explicit `oauthScopes` to `backend/appsscript.json` for `https://www.googleapis.com/auth/tasks`, `https://www.googleapis.com/auth/spreadsheets`, and `https://www.googleapis.com/auth/gmail.compose`, resolving silent Google Tasks API authorization blocks during Web App execution.
+
 ## [4.3.0] - 2026-08-05
 
 ### Added
