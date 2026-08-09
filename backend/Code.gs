@@ -24,6 +24,7 @@ function onOpen() {
     .addItem("✨ Generate 5 Fresh Fun Facts Now", "generate5FreshFactsNow")
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
+    .addItem("📌 Sync All Sheet Facts to Google Tasks", "syncMissingFactsToGoogleTasks")
     .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
     .addItem("🔍 Re-Scan All Facts for Duplicates", "reScanAllDuplicates")
     .addItem("🎨 Apply Beautiful Theme & Formatting", "formatSheetArtistically")
@@ -1061,6 +1062,64 @@ function generate5FreshFactsNow() {
 }
 
 /**
+ * Scans the Google Sheet Fact Log for any facts that haven't been posted to Google Tasks App
+ * (or have empty/placeholder Task IDs in Col H), and pushes them all to your Google Tasks App!
+ * Run from menu: 🎯 Fun Fact Tracker > 📌 Sync All Sheet Facts to Google Tasks
+ */
+function syncMissingFactsToGoogleTasks() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet || sheet.getLastRow() < 2) {
+    if (ui) ui.alert("⚠️ No Data", "The Fact Log sheet is empty.", ui.ButtonSet.OK);
+    return { success: false, synced: 0 };
+  }
+
+  const lastRow = sheet.getLastRow();
+  const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+
+  let syncedCount = 0;
+  let errorsCount = 0;
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const factText = row[2];        // Col C: Fact Text
+    const category = row[3];        // Col D: Category
+    const status = String(row[6] || "").toLowerCase(); // Col G: Status
+    const taskIdCol = String(row[7] || "");             // Col H: Task ID
+
+    // Only sync valid non-duplicate facts
+    if (!factText || typeof factText !== "string" || !factText.trim()) continue;
+    if (status.includes("duplicate")) continue;
+
+    // Check if Task ID is missing or is a legacy placeholder (KEEP- or empty)
+    const needsSync = !taskIdCol || taskIdCol.startsWith("KEEP-") || taskIdCol.startsWith("TASK-17");
+
+    if (needsSync) {
+      Logger.log(`Syncing missing fact row ${i + 2} to Google Tasks: "${factText.substring(0, 50)}..."`);
+      const taskRes = postToGoogleTasks(factText, category);
+      if (taskRes && taskRes.success && taskRes.taskId) {
+        // Update Column H with real Google Task ID
+        sheet.getRange(i + 2, 8).setValue(taskRes.taskId);
+        syncedCount++;
+      } else {
+        errorsCount++;
+      }
+    }
+  }
+
+  SpreadsheetApp.flush();
+  formatSheetArtistically();
+
+  const msg = `🎉 Google Tasks Sync Complete!\n\n📌 Facts synced to Google Tasks App: ${syncedCount}\n⚠️ Errors/Skipped: ${errorsCount}\n\nAll facts in your sheet are now live in your Google Tasks App!`;
+  Logger.log(msg);
+  if (ui) ui.alert("📌 Google Tasks Sync Results", msg, ui.ButtonSet.OK);
+
+  return { success: true, synced: syncedCount, errors: errorsCount };
+}
+
+/**
  * Post Fact to Google Keep & Google Tasks App
  */
 function postToGoogleKeep(factText, category) {
@@ -1146,6 +1205,9 @@ function dailyMidnightTrigger() {
 
     const saved = saveFactToSheet(uniqueFact);
     Logger.log("Successfully processed daily fun fact: " + saved.id);
+
+    // Auto-sync any un-synced facts to Google Tasks App
+    syncMissingFactsToGoogleTasks();
 
     if (ui) {
       ui.alert(

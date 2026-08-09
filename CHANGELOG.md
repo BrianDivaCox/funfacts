@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.4.0] - 2026-08-09
+
+### Added
+- **Google Tasks Catch-Up & Auto-Sync Engine (`syncMissingFactsToGoogleTasks`)**:
+  - Added menu item `📌 Sync All Sheet Facts to Google Tasks` in Google Sheets to retroactively sync any facts added to Google Sheets (including those added by GitHub Actions or Web App) directly to your Google Tasks App.
+  - Automatically runs `syncMissingFactsToGoogleTasks()` inside the daily midnight trigger.
+
 ## [4.3.1] - 2026-08-07
 
 ### Fixed
