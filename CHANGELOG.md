@@ -2,6 +2,15 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.5.0] - 2026-08-09
+
+### Enhanced
+- **Smart Recent-Only Sync (`syncMissingFactsToGoogleTasks`)**:
+  - Filtered Google Tasks sync to ONLY sync fresh/active facts (added in the last 7 days or status `Posted`/`Queued`).
+  - Automatically skips the 64 historical seed facts so your Google Tasks list is never flooded with old historical entries.
+- **1-Click Google Tasks Clean-Up (`cleanOldGoogleTasks`)**:
+  - Added menu item `🧹 Clean Completed / Old Tasks from Google Tasks` in Google Sheets to purge completed or old fun fact tasks with 1 click.
+
 ## [4.4.0] - 2026-08-09
 
 ### Added

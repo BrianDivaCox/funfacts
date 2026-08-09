@@ -24,7 +24,8 @@ function onOpen() {
     .addItem("✨ Generate 5 Fresh Fun Facts Now", "generate5FreshFactsNow")
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
-    .addItem("📌 Sync All Sheet Facts to Google Tasks", "syncMissingFactsToGoogleTasks")
+    .addItem("📌 Sync Recent Facts to Google Tasks", "syncMissingFactsToGoogleTasks")
+    .addItem("🧹 Clean Completed / Old Tasks from Google Tasks", "cleanOldGoogleTasks")
     .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
     .addItem("🔍 Re-Scan All Facts for Duplicates", "reScanAllDuplicates")
     .addItem("🎨 Apply Beautiful Theme & Formatting", "formatSheetArtistically")
@@ -1062,9 +1063,10 @@ function generate5FreshFactsNow() {
 }
 
 /**
- * Scans the Google Sheet Fact Log for any facts that haven't been posted to Google Tasks App
- * (or have empty/placeholder Task IDs in Col H), and pushes them all to your Google Tasks App!
- * Run from menu: 🎯 Fun Fact Tracker > 📌 Sync All Sheet Facts to Google Tasks
+ * Scans the Google Sheet Fact Log for recent active facts (added in the last 7 days or Status = Posted/Queued)
+ * that haven't been posted to Google Tasks App, and pushes only fresh facts to Google Tasks!
+ * Skips old historical facts so you never have to manually delete old tasks.
+ * Run from menu: 🎯 Fun Fact Tracker > 📌 Sync Recent Facts to Google Tasks
  */
 function syncMissingFactsToGoogleTasks() {
   const ui = SpreadsheetApp.getUi();
@@ -1081,23 +1083,39 @@ function syncMissingFactsToGoogleTasks() {
 
   let syncedCount = 0;
   let errorsCount = 0;
+  const sevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
+    const dateAddedStr = row[1];    // Col B: Date Added
     const factText = row[2];        // Col C: Fact Text
     const category = row[3];        // Col D: Category
     const status = String(row[6] || "").toLowerCase(); // Col G: Status
     const taskIdCol = String(row[7] || "");             // Col H: Task ID
 
-    // Only sync valid non-duplicate facts
+    // Skip invalid, duplicate, or already used facts
     if (!factText || typeof factText !== "string" || !factText.trim()) continue;
-    if (status.includes("duplicate")) continue;
+    if (status.includes("duplicate") || status.includes("used")) continue;
 
-    // Check if Task ID is missing or is a legacy placeholder (KEEP- or empty)
-    const needsSync = !taskIdCol || taskIdCol.startsWith("KEEP-") || taskIdCol.startsWith("TASK-17");
+    // Check date: Only sync facts added in the last 7 days (or recent manual entries)
+    let isRecent = true;
+    if (dateAddedStr) {
+      const factDate = new Date(dateAddedStr);
+      if (!isNaN(factDate.getTime()) && factDate < sevenDaysAgo) {
+        isRecent = false;
+      }
+    }
+
+    // Skip historical 64 seed facts (KEEP-1000 to KEEP-1063) or old facts
+    if (taskIdCol.startsWith("KEEP-1") || !isRecent) {
+      continue;
+    }
+
+    // Needs sync if Task ID is empty or temporary
+    const needsSync = !taskIdCol || taskIdCol.startsWith("TASK-17");
 
     if (needsSync) {
-      Logger.log(`Syncing missing fact row ${i + 2} to Google Tasks: "${factText.substring(0, 50)}..."`);
+      Logger.log(`Syncing fresh fact row ${i + 2} to Google Tasks: "${factText.substring(0, 50)}..."`);
       const taskRes = postToGoogleTasks(factText, category);
       if (taskRes && taskRes.success && taskRes.taskId) {
         // Update Column H with real Google Task ID
@@ -1112,11 +1130,63 @@ function syncMissingFactsToGoogleTasks() {
   SpreadsheetApp.flush();
   formatSheetArtistically();
 
-  const msg = `🎉 Google Tasks Sync Complete!\n\n📌 Facts synced to Google Tasks App: ${syncedCount}\n⚠️ Errors/Skipped: ${errorsCount}\n\nAll facts in your sheet are now live in your Google Tasks App!`;
+  const msg = `🎉 Google Tasks Sync Complete!\n\n📌 Fresh facts synced: ${syncedCount}\n⏩ Old historical facts skipped: (kept out of your task list)\n\nOnly active fresh facts are in your Google Tasks App!`;
   Logger.log(msg);
   if (ui) ui.alert("📌 Google Tasks Sync Results", msg, ui.ButtonSet.OK);
 
   return { success: true, synced: syncedCount, errors: errorsCount };
+}
+
+/**
+ * 1-Click Clean-Up: Deletes completed or old fun fact tasks from Google Tasks
+ * so your task list stays 100% clean and clutter-free!
+ * Run from menu: 🎯 Fun Fact Tracker > 🧹 Clean Completed / Old Tasks from Google Tasks
+ */
+function cleanOldGoogleTasks() {
+  const ui = SpreadsheetApp.getUi();
+  let deletedCount = 0;
+
+  try {
+    const listIds = ["@default"];
+    
+    // Check if custom FunFacts list exists
+    try {
+      const taskLists = Tasks.Tasklists.list();
+      if (taskLists && taskLists.items) {
+        for (const item of taskLists.items) {
+          if (item.title.toLowerCase() === "funfacts") {
+            listIds.push(item.id);
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+
+    for (const listId of listIds) {
+      try {
+        const tasksRes = Tasks.Tasks.list(listId, { showCompleted: true, showHidden: true });
+        if (tasksRes && tasksRes.items) {
+          for (const task of tasksRes.items) {
+            if (task.title && task.title.includes("#funfact")) {
+              if (task.status === "completed") {
+                Tasks.Tasks.remove(listId, task.id);
+                deletedCount++;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        Logger.log(`Notice cleaning list ${listId}: ${err.message}`);
+      }
+    }
+
+    const msg = `🧹 Google Tasks Clean-Up Complete!\n\nCompleted fun fact tasks removed: ${deletedCount}\nYour Google Tasks App is now clean and decluttered!`;
+    if (ui) ui.alert("🧹 Task Clean-Up Results", msg, ui.ButtonSet.OK);
+    return { success: true, deleted: deletedCount };
+  } catch (err) {
+    if (ui) ui.alert("⚠️ Clean-Up Notice", err.message, ui.ButtonSet.OK);
+    return { success: false, error: err.message };
+  }
 }
 
 /**
