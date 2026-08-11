@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.6.0] - 2026-08-11
+
+### Added
+- **Automated Hourly Background Google Tasks Sync Trigger (`setupMidnightTrigger`)**:
+  - Updated `setupMidnightTrigger()` to automatically install an hourly time-driven trigger (`syncMissingFactsToGoogleTasks`).
+  - Automatically picks up any new facts posted by GitHub Actions to Google Sheets and posts them directly to your Google Tasks App without manual intervention.
+
 ## [4.5.0] - 2026-08-09
 
 ### Enhanced

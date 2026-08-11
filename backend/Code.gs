@@ -1298,23 +1298,35 @@ function dailyMidnightTrigger() {
 }
 
 /**
- * Setup or reset daily midnight time-driven trigger
+ * Setup or reset daily midnight time-driven trigger & hourly Google Tasks Auto-Sync trigger
+ * Run from menu: 🎯 Fun Fact Tracker > ⏰ Setup 12:00 AM Midnight Auto-Pilot
  */
 function setupMidnightTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
   for (const trigger of triggers) {
-    if (trigger.getHandlerFunction() === "dailyMidnightTrigger") {
+    const handler = trigger.getHandlerFunction();
+    if (handler === "dailyMidnightTrigger" || handler === "syncMissingFactsToGoogleTasks") {
       ScriptApp.deleteTrigger(trigger);
     }
   }
 
+  // 1. Primary Daily Midnight Trigger (12:00 AM)
   ScriptApp.newTrigger("dailyMidnightTrigger")
     .timeBased()
     .everyDays(1)
-    .atHour(0) // 12:00 AM Midnight
+    .atHour(0)
     .create();
 
-  return { success: true, message: "Daily Midnight Trigger installed for 12:00 AM daily." };
+  // 2. Hourly Google Tasks Auto-Sync Trigger (picks up facts added by GitHub Actions & posts to Google Tasks)
+  ScriptApp.newTrigger("syncMissingFactsToGoogleTasks")
+    .timeBased()
+    .everyHours(1)
+    .create();
+
+  return { 
+    success: true, 
+    message: "🎉 Success! 12:00 AM Midnight Trigger & Hourly Google Tasks Auto-Sync trigger installed successfully!" 
+  };
 }
 
 /**
