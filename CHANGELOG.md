@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.6.1] - 2026-08-11
+
+### Fixed
+- **Missing `script.scriptapp` OAuth Scope**: Added `https://www.googleapis.com/auth/script.scriptapp` and `https://www.googleapis.com/auth/script.container.ui` to `backend/appsscript.json`, fixing `ScriptApp.getProjectTriggers` permission exception.
+
 ## [4.6.0] - 2026-08-11
 
 ### Added
