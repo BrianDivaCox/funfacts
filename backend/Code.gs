@@ -1106,20 +1106,21 @@ function syncMissingFactsToGoogleTasks() {
       }
     }
 
-    // Skip historical 64 seed facts (KEEP-1000 to KEEP-1063) or old facts
-    if (taskIdCol.startsWith("KEEP-1") || !isRecent) {
+    // Skip historical 64 seed facts (KEEP-1000 to KEEP-1063) or non-recent facts
+    const isHistoricalSeed = /^KEEP-10\d{2}$/.test(taskIdCol);
+    if (isHistoricalSeed || !isRecent) {
       continue;
     }
 
-    // Needs sync if Task ID is empty or temporary
-    const needsSync = !taskIdCol || taskIdCol.startsWith("TASK-17");
+    // Needs sync if it hasn't been successfully synced to Google Tasks yet (doesn't start with GTASK-)
+    const needsSync = !taskIdCol.startsWith("GTASK-");
 
     if (needsSync) {
       Logger.log(`Syncing fresh fact row ${i + 2} to Google Tasks: "${factText.substring(0, 50)}..."`);
       const taskRes = postToGoogleTasks(factText, category);
       if (taskRes && taskRes.success && taskRes.taskId) {
-        // Update Column H with real Google Task ID
-        sheet.getRange(i + 2, 8).setValue(taskRes.taskId);
+        // Update Column H with real Google Task ID prefix GTASK-
+        sheet.getRange(i + 2, 8).setValue("GTASK-" + taskRes.taskId);
         syncedCount++;
       } else {
         errorsCount++;

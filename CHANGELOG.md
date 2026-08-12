@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.7.0] - 2026-08-12
+
+### Fixed
+- **Google Tasks Sync Filter Bug**: Fixed `syncMissingFactsToGoogleTasks()` filtering in `backend/Code.gs` where new facts added by GitHub Actions (with `KEEP-17...` timestamps) were accidentally matching the historical seed filter (`KEEP-1...`).
+- Added exact regex `/^KEEP-10\d{2}$/` matching for historical seeds and explicit `GTASK-` prefix tracking, ensuring 100% of newly generated daily facts from GitHub Actions sync into Google Tasks.
+
 ## [4.6.1] - 2026-08-11
 
 ### Fixed
