@@ -835,61 +835,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
   throw new Error(`Could not generate a non-duplicate fact after multiple attempts. Last detail: ${lastErrDetail}`);
 }
 
-/**
- * Save new fact to Spreadsheet
- * Runs a final hard duplicate check before writing to prevent any slippage.
- */
-function saveFactToSheet(factObj) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    initSpreadsheet();
-    sheet = ss.getSheetByName(SHEET_NAME);
-  }
 
-  // HARD DUPLICATE GUARD: Re-check against ALL facts in sheet right before saving
-  const allCurrentFacts = getAllFacts();
-  const finalDupCheck = checkDuplicate(factObj.factText, allCurrentFacts);
-  if (finalDupCheck.isDuplicate) {
-    throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}..."`);
-  }
-
-  // Automatically push to Google Tasks & Google Keep if not already done
-  let keepNoteId = factObj.keepNoteId || "";
-  if (!keepNoteId) {
-    try {
-      const keepRes = postToGoogleKeep(factObj.factText, factObj.category);
-      if (keepRes && keepRes.keepNoteId) {
-        keepNoteId = keepRes.keepNoteId;
-      }
-    } catch (kErr) {
-      Logger.log("Notice: postToGoogleKeep during saveFactToSheet: " + kErr.message);
-    }
-  }
-
-  sheet.appendRow([
-    id,
-    dateStr,
-    factObj.factText,
-    factObj.category || "General",
-    keywordsStr,
-    factObj.similarityScore || 0,
-    factObj.status || "Queued",
-    keepNoteId,
-    factObj.source || "Gemini"
-  ]);
-
-  return {
-    id: id,
-    date: dateStr,
-    factText: factObj.factText,
-    category: factObj.category || "General",
-    keywords: factObj.keywords,
-    similarityScore: factObj.similarityScore || 0,
-    status: factObj.status || "Queued",
-    keepNoteId: keepNoteId
-  };
-}
 
 /**
  * Direct Google Tasks Integration
@@ -1126,10 +1072,83 @@ function generate5FreshFactsNow() {
   }
 }
 
+function saveFactToSheet(factObj) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    initSpreadsheet();
+    sheet = ss.getSheetByName(SHEET_NAME);
+  }
+
+  // HARD DUPLICATE GUARD: Re-check against ALL facts in sheet right before saving
+  const allCurrentFacts = getAllFacts();
+  const finalDupCheck = checkDuplicate(factObj.factText, allCurrentFacts);
+  
+  let finalStatus = "Queued";
+  let similarityScore = finalDupCheck.similarityScore || 0;
+  
+  if (finalDupCheck.isDuplicate) {
+    if (!factObj.force) {
+      throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}..."`);
+    } else {
+      finalStatus = "Duplicate (Flagged)";
+    }
+  }
+
+  const id = factObj.id || ("FACT-" + Date.now());
+  const dateStr = factObj.date || new Date().toISOString();
+  const keywordsStr = Array.isArray(factObj.keywords) ? factObj.keywords.join(", ") : (factObj.keywords || "");
+
+  // Post to Google Tasks & verify
+  let keepNoteId = factObj.keepNoteId || "";
+  if (!finalDupCheck.isDuplicate) {
+    try {
+      const taskRes = postToGoogleTasks(factObj.factText, factObj.category);
+      if (taskRes && taskRes.success && taskRes.taskId) {
+        finalStatus = "Posted"; // ONLY say Posted when confirmed created in Google Tasks
+        keepNoteId = "GTASK-" + taskRes.taskId;
+      } else {
+        finalStatus = "Queued"; // Keep as Queued if Google Tasks hasn't succeeded yet
+        keepNoteId = "";
+        Logger.log("Google Tasks push notice: " + (taskRes ? taskRes.error : "Pending"));
+      }
+    } catch (kErr) {
+      finalStatus = "Queued";
+      Logger.log("Notice: postToGoogleTasks during saveFactToSheet: " + kErr.message);
+    }
+  } else {
+    finalStatus = "Duplicate (Flagged)";
+  }
+
+  sheet.appendRow([
+    id,
+    dateStr,
+    factObj.factText,
+    factObj.category || "General",
+    keywordsStr,
+    similarityScore,
+    finalStatus,
+    keepNoteId,
+    factObj.source || "Gemini"
+  ]);
+
+  formatSheetArtistically();
+
+  return {
+    id: id,
+    date: dateStr,
+    factText: factObj.factText,
+    category: factObj.category || "General",
+    keywords: factObj.keywords,
+    similarityScore: similarityScore,
+    status: finalStatus,
+    keepNoteId: keepNoteId
+  };
+}
+
 /**
  * Scans the Google Sheet Fact Log for recent active facts (added in the last 7 days or Status = Posted/Queued)
  * that haven't been posted to Google Tasks App, and pushes only fresh facts to Google Tasks!
- * Skips old historical facts so you never have to manually delete old tasks.
  * Run from menu: 🎯 Fun Fact Tracker > 📌 Sync Recent Facts to Google Tasks
  */
 function syncMissingFactsToGoogleTasks() {
@@ -1146,22 +1165,38 @@ function syncMissingFactsToGoogleTasks() {
   const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
 
   let syncedCount = 0;
+  let duplicatesFound = 0;
   let errorsCount = 0;
   const sevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
+  const checkedFacts = [];
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const dateAddedStr = row[1];    // Col B: Date Added
     const factText = row[2];        // Col C: Fact Text
     const category = row[3];        // Col D: Category
-    const status = String(row[6] || "").toLowerCase(); // Col G: Status
+    const currentStatus = String(row[6] || "").toLowerCase(); // Col G: Status
     const taskIdCol = String(row[7] || "");             // Col H: Task ID
 
-    // Skip invalid, duplicate, or already used facts
     if (!factText || typeof factText !== "string" || !factText.trim()) continue;
-    if (status.includes("duplicate") || status.includes("used")) continue;
 
-    // Check date: Only sync facts added in the last 7 days (or recent manual entries)
+    // 1. HARD DUPLICATE SCAN FOR THIS ROW:
+    const dupCheck = checkedFacts.length > 0 
+      ? checkDuplicate(factText, checkedFacts)
+      : { isDuplicate: false, similarityScore: 0 };
+
+    if (dupCheck.isDuplicate) {
+      // Mark as Duplicate (Flagged)
+      sheet.getRange(i + 2, 6).setValue(dupCheck.similarityScore);
+      sheet.getRange(i + 2, 7).setValue("Duplicate (Flagged)");
+      duplicatesFound++;
+      checkedFacts.push({ factText: factText, category: category, keywords: String(row[4] || "").split(",") });
+      continue;
+    }
+
+    checkedFacts.push({ factText: factText, category: category, keywords: String(row[4] || "").split(",") });
+
+    // 2. CHECK IF THIS ROW NEEDS SYNC TO GOOGLE TASKS
     let isRecent = true;
     if (dateAddedStr) {
       const factDate = new Date(dateAddedStr);
@@ -1183,10 +1218,14 @@ function syncMissingFactsToGoogleTasks() {
       Logger.log(`Syncing fresh fact row ${i + 2} to Google Tasks: "${factText.substring(0, 50)}..."`);
       const taskRes = postToGoogleTasks(factText, category);
       if (taskRes && taskRes.success && taskRes.taskId) {
+        // Update Column G to "Posted" ONLY when Google Tasks creation succeeds!
+        sheet.getRange(i + 2, 7).setValue("Posted");
         // Update Column H with real Google Task ID prefix GTASK-
         sheet.getRange(i + 2, 8).setValue("GTASK-" + taskRes.taskId);
         syncedCount++;
       } else {
+        // If Google Tasks failed, keep as "Queued" (NOT "Posted")
+        sheet.getRange(i + 2, 7).setValue("Queued");
         errorsCount++;
       }
     }

@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.0.0] - 2026-08-14
+
+### Major Update
+- **Strict Verified Status Pipeline (`saveFactToSheet` & `syncMissingFactsToGoogleTasks`)**:
+  - `Status` is strictly set to **`"Posted"`** ONLY AFTER Google Tasks API returns a verified task ID (`GTASK-xxxxx`). If the task is pending or un-pushed, it remains **`"Queued"`**.
+  - Integrated active duplicate scanning directly into `syncMissingFactsToGoogleTasks()` so all incoming rows are continuously checked and automatically flagged as **`"Duplicate (Flagged)"`** if similarity score meets threshold.
+
 ## [4.9.1] - 2026-08-14
 
 ### Fixed
