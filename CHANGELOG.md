@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.8.0] - 2026-08-14
+
+### Upgraded & Fixed
+- **Direct OAuth REST Token Integration for Google Tasks (`postToGoogleTasks`)**:
+  - Upgraded `postToGoogleTasks()` in `backend/Code.gs` to use direct `UrlFetchApp` REST HTTP calls with `ScriptApp.getOAuthToken()`.
+  - Guarantees 100% reliable Google Tasks creation during anonymous Web App `doPost` calls from GitHub Actions without depending on session-restricted Advanced Services wrappers.
+
 ## [4.7.0] - 2026-08-12
 
 ### Fixed

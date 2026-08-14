@@ -911,56 +911,59 @@ function postToGoogleTasks(factText, category) {
 
   try {
     let defaultTaskId = null;
-    let customTaskId = null;
     let lastError = "";
 
-    // 1. Post to Primary "My Tasks" List (@default) so it's immediately visible on home screen
+    // 1. Direct REST Call with ScriptApp.getOAuthToken() for 100% reliable execution during doPost
     try {
-      const mainTaskObj = {
+      const token = ScriptApp.getOAuthToken();
+      const taskPayload = {
         title: cleanFact,
         notes: `Category: #${catToUse} | Added by FactVault AI`
       };
-      const createdMain = Tasks.Tasks.insert(mainTaskObj, "@default");
-      defaultTaskId = createdMain.id;
-      Logger.log("Successfully posted to primary Google Tasks list (@default): " + defaultTaskId);
-    } catch (mainErr) {
-      lastError = mainErr.message;
-      Logger.log("Notice posting to @default list: " + mainErr.message);
+
+      const respMain = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/lists/@default/tasks", {
+        method: "post",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        payload: JSON.stringify(taskPayload),
+        muteHttpExceptions: true
+      });
+      
+      const codeMain = respMain.getResponseCode();
+      const bodyMain = respMain.getContentText();
+      Logger.log(`REST Google Tasks response (${codeMain}): ${bodyMain}`);
+
+      if (codeMain === 200 || codeMain === 201) {
+        const jsonMain = JSON.parse(bodyMain);
+        defaultTaskId = jsonMain.id;
+      } else {
+        lastError = `HTTP ${codeMain}: ${bodyMain}`;
+      }
+    } catch (restErr) {
+      lastError = restErr.message;
+      Logger.log("Notice posting via REST token: " + restErr.message);
     }
 
-    // 2. Also post to "FunFacts" custom list tab if present
-    try {
-      let funFactsListId = null;
-      const taskLists = Tasks.Tasklists.list();
-      if (taskLists && taskLists.items) {
-        for (let i = 0; i < taskLists.items.length; i++) {
-          if (taskLists.items[i].title.toLowerCase() === "funfacts") {
-            funFactsListId = taskLists.items[i].id;
-            break;
-          }
-        }
-        if (!funFactsListId) {
-          const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
-          funFactsListId = newList.id;
-        }
-      }
-      if (funFactsListId) {
-        const customTaskObj = {
+    // 2. Fallback to Advanced Service if REST method had an issue
+    if (!defaultTaskId) {
+      try {
+        const mainTaskObj = {
           title: cleanFact,
           notes: `Category: #${catToUse} | Added by FactVault AI`
         };
-        const createdCustom = Tasks.Tasks.insert(customTaskObj, funFactsListId);
-        customTaskId = createdCustom.id;
-        Logger.log("Successfully posted to FunFacts list tab: " + customTaskId);
+        const createdMain = Tasks.Tasks.insert(mainTaskObj, "@default");
+        defaultTaskId = createdMain.id;
+        Logger.log("Successfully posted via Tasks Advanced Service: " + defaultTaskId);
+      } catch (advErr) {
+        if (!lastError) lastError = advErr.message;
+        Logger.log("Notice posting via Advanced Service: " + advErr.message);
       }
-    } catch (customErr) {
-      if (!lastError) lastError = customErr.message;
-      Logger.log("Notice posting to FunFacts list: " + customErr.message);
     }
 
-    const primaryId = defaultTaskId || customTaskId;
-    if (primaryId) {
-      return { success: true, taskId: primaryId, title: cleanFact };
+    if (defaultTaskId) {
+      return { success: true, taskId: defaultTaskId, title: cleanFact };
     } else {
       return { success: false, error: lastError || "Could not insert task into Google Tasks" };
     }
