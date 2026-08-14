@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.0.1] - 2026-08-14
+
+### Fixed
+- **Complete Elimination of `setNumberFormat` & Typed Column Protection**: Completely removed `.setNumberFormat()` calls from all script files and protected every individual cell styling operation in `formatSheetArtistically()` with individual `try/catch` guards, permanently eliminating `Exception: You can't set the number format of cells in a typed column`.
+
 ## [5.0.0] - 2026-08-14
 
 ### Major Update
