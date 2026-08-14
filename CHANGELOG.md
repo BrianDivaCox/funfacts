@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.9.0] - 2026-08-14
+
+### Changed
+- **Dedicated `FunFacts` Google Tasks List Placement**: Updated `postToGoogleTasks()` to explicitly locate (or auto-create) the **`FunFacts`** list tab in Google Tasks via REST API, ensuring all new fun facts are organized neatly in your dedicated `FunFacts` list.
+
 ## [4.8.0] - 2026-08-14
 
 ### Upgraded & Fixed

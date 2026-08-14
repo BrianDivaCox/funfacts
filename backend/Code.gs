@@ -910,62 +910,119 @@ function postToGoogleTasks(factText, category) {
   }
 
   try {
-    let defaultTaskId = null;
+    let funFactsTaskId = null;
     let lastError = "";
+    const token = ScriptApp.getOAuthToken();
+    const headers = {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    };
 
-    // 1. Direct REST Call with ScriptApp.getOAuthToken() for 100% reliable execution during doPost
+    // 1. Find or create the "FunFacts" task list via REST
+    let funFactsListId = null;
     try {
-      const token = ScriptApp.getOAuthToken();
+      const listResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+        method: "get",
+        headers: headers,
+        muteHttpExceptions: true
+      });
+      if (listResp.getResponseCode() === 200) {
+        const listsData = JSON.parse(listResp.getContentText());
+        if (listsData.items && Array.isArray(listsData.items)) {
+          for (let i = 0; i < listsData.items.length; i++) {
+            if (listsData.items[i].title && listsData.items[i].title.toLowerCase() === "funfacts") {
+              funFactsListId = listsData.items[i].id;
+              break;
+            }
+          }
+        }
+      }
+
+      // If "FunFacts" list does not exist yet, create it
+      if (!funFactsListId) {
+        const createListResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+          method: "post",
+          headers: headers,
+          payload: JSON.stringify({ title: "FunFacts" }),
+          muteHttpExceptions: true
+        });
+        if (createListResp.getResponseCode() === 200 || createListResp.getResponseCode() === 201) {
+          const newListData = JSON.parse(createListResp.getContentText());
+          funFactsListId = newListData.id;
+          Logger.log("Created new 'FunFacts' task list with ID: " + funFactsListId);
+        }
+      }
+    } catch (listErr) {
+      Logger.log("Notice finding/creating FunFacts list via REST: " + listErr.message);
+    }
+
+    // 2. Post task to the "FunFacts" list
+    const targetListId = funFactsListId || "@default";
+    try {
       const taskPayload = {
         title: cleanFact,
         notes: `Category: #${catToUse} | Added by FactVault AI`
       };
 
-      const respMain = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/lists/@default/tasks", {
+      const resp = UrlFetchApp.fetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(targetListId)}/tasks`, {
         method: "post",
-        headers: {
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json"
-        },
+        headers: headers,
         payload: JSON.stringify(taskPayload),
         muteHttpExceptions: true
       });
       
-      const codeMain = respMain.getResponseCode();
-      const bodyMain = respMain.getContentText();
-      Logger.log(`REST Google Tasks response (${codeMain}): ${bodyMain}`);
+      const code = resp.getResponseCode();
+      const body = resp.getContentText();
+      Logger.log(`REST Google Tasks response (${code}) on list '${targetListId}': ${body}`);
 
-      if (codeMain === 200 || codeMain === 201) {
-        const jsonMain = JSON.parse(bodyMain);
-        defaultTaskId = jsonMain.id;
+      if (code === 200 || code === 201) {
+        const json = JSON.parse(body);
+        funFactsTaskId = json.id;
       } else {
-        lastError = `HTTP ${codeMain}: ${bodyMain}`;
+        lastError = `HTTP ${code}: ${body}`;
       }
     } catch (restErr) {
       lastError = restErr.message;
       Logger.log("Notice posting via REST token: " + restErr.message);
     }
 
-    // 2. Fallback to Advanced Service if REST method had an issue
-    if (!defaultTaskId) {
+    // 3. Fallback to Advanced Service targeting FunFacts list if needed
+    if (!funFactsTaskId) {
       try {
-        const mainTaskObj = {
+        let advListId = "@default";
+        try {
+          const taskLists = Tasks.Tasklists.list();
+          if (taskLists && taskLists.items) {
+            for (let i = 0; i < taskLists.items.length; i++) {
+              if (taskLists.items[i].title.toLowerCase() === "funfacts") {
+                advListId = taskLists.items[i].id;
+                break;
+              }
+            }
+            if (advListId === "@default") {
+              const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
+              advListId = newList.id;
+            }
+          }
+        } catch (e) {}
+
+        const taskObj = {
           title: cleanFact,
           notes: `Category: #${catToUse} | Added by FactVault AI`
         };
-        const createdMain = Tasks.Tasks.insert(mainTaskObj, "@default");
-        defaultTaskId = createdMain.id;
-        Logger.log("Successfully posted via Tasks Advanced Service: " + defaultTaskId);
+        const createdTask = Tasks.Tasks.insert(taskObj, advListId);
+        funFactsTaskId = createdTask.id;
+        Logger.log("Successfully posted via Tasks Advanced Service: " + funFactsTaskId);
       } catch (advErr) {
         if (!lastError) lastError = advErr.message;
         Logger.log("Notice posting via Advanced Service: " + advErr.message);
       }
     }
 
-    if (defaultTaskId) {
-      return { success: true, taskId: defaultTaskId, title: cleanFact };
+    if (funFactsTaskId) {
+      return { success: true, taskId: funFactsTaskId, title: cleanFact, list: "FunFacts" };
     } else {
-      return { success: false, error: lastError || "Could not insert task into Google Tasks" };
+      return { success: false, error: lastError || "Could not insert task into FunFacts list" };
     }
   } catch (err) {
     Logger.log("Google Tasks API Error: " + err.message);
