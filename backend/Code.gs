@@ -248,7 +248,11 @@ function formatSheetArtistically() {
       sheet.getRange(2, 6, lastRow - 1, 4).setHorizontalAlignment("center"); // Score, Status, Keep ID, Source
 
       // Similarity Score Number Format (Percent)
-      sheet.getRange(2, 6, lastRow - 1, 1).setNumberFormat("0.0%");
+      try {
+        sheet.getRange(2, 6, lastRow - 1, 1).setNumberFormat("0.0%");
+      } catch (nfErr) {
+        Logger.log("Notice: Column number format skipped on typed column: " + nfErr.message);
+      }
 
       // Row-by-Row Custom Badge & Alternating Colors
       const dataValues = dataRange.getValues();

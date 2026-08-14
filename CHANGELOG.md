@@ -2,6 +2,11 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [4.9.1] - 2026-08-14
+
+### Fixed
+- **Typed Table Column Formatting Exception**: Wrapped `setNumberFormat("0.0%")` in `try/catch` block within `formatSheetArtistically()` to prevent `Exception: You can't set the number format of cells in a typed column` when formatting Google Sheets Tables.
+
 ## [4.9.0] - 2026-08-14
 
 ### Changed
