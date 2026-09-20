@@ -24,6 +24,9 @@ function onOpen() {
     .addItem("✨ Generate 5 Fresh Fun Facts Now", "generate5FreshFactsNow")
     .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
     .addSeparator()
+    .addItem("🍔 Post 'food is good in my tummy' Task", "postFoodTaskToGoogleTasks")
+    .addItem("➕ Add Custom Task to Google Tasks (Prompt)", "addCustomTaskFromMenu")
+    .addItem("🔒 Post Security Checklist to Google Tasks", "postSecurityChecklistToGoogleTasks")
     .addItem("📌 Sync Recent Facts to Google Tasks", "syncMissingFactsToGoogleTasks")
     .addItem("🧹 Clean Completed / Old Tasks from Google Tasks", "cleanOldGoogleTasks")
     .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
@@ -35,7 +38,7 @@ function onOpen() {
 function trackCentralAccountQuota(projectName) {
   try {
     var today = Utilities.formatDate(new Date(), "America/Los_Angeles", "yyyy-MM-dd");
-    var url = "https://livecounters-8eaa8-default-rtdb.firebaseio.com/accountQuota/" + today + ".json?auth=IRhauBNcErreqJ8tKdIaUCAKQ6bVymfRsdnuASxe";
+    var url = "https://livecounters-8eaa8-default-rtdb.firebaseio.com/accountQuota/" + today + ".json";
     var payload = JSON.stringify({ project: projectName || "FunFact Tracker", timestamp: new Date().getTime() });
     UrlFetchApp.fetch(url, { method: "post", payload: payload, muteHttpExceptions: true });
   } catch(e) {}
@@ -994,6 +997,208 @@ function postToGoogleTasks(factText, category) {
 }
 
 /**
+ * Generic Google Tasks Creator Bridge
+ * Creates any task in Google Tasks under specified list or @default.
+ */
+function addGeneralGoogleTask(title, notes, listTitle) {
+  const targetListName = (listTitle || "My Tasks").trim();
+  const cleanTitle = String(title || "").trim();
+  const cleanNotes = String(notes || "").trim();
+  
+  if (!cleanTitle) {
+    return { success: false, error: "Task title cannot be empty" };
+  }
+
+  try {
+    const token = ScriptApp.getOAuthToken();
+    const headers = {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    };
+
+    let targetListId = null;
+    let actualListName = targetListName;
+    let allLists = [];
+
+    // 1. Fetch user task lists to resolve real List ID
+    try {
+      const listResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+        method: "get",
+        headers: headers,
+        muteHttpExceptions: true
+      });
+      if (listResp.getResponseCode() === 200) {
+        const listsData = JSON.parse(listResp.getContentText());
+        if (listsData.items && Array.isArray(listsData.items)) {
+          allLists = listsData.items.map(l => ({ id: l.id, title: l.title }));
+          for (let i = 0; i < listsData.items.length; i++) {
+            const lTitle = (listsData.items[i].title || "").toLowerCase();
+            if (lTitle === targetListName.toLowerCase() || 
+               (targetListName.toLowerCase() === "my tasks" && (lTitle === "my tasks" || lTitle === "tasks" || lTitle === "default list"))) {
+              targetListId = listsData.items[i].id;
+              actualListName = listsData.items[i].title;
+              break;
+            }
+          }
+          if (!targetListId && (targetListName.toLowerCase() === "my tasks" || targetListName === "@default") && listsData.items.length > 0) {
+            targetListId = listsData.items[0].id;
+            actualListName = listsData.items[0].title;
+          }
+        }
+      }
+    } catch (listErr) {
+      Logger.log("Notice resolving task list: " + listErr.message);
+    }
+
+    // 2. If custom list requested and doesn't exist, create it
+    if (!targetListId) {
+      try {
+        const createListResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+          method: "post",
+          headers: headers,
+          payload: JSON.stringify({ title: targetListName }),
+          muteHttpExceptions: true
+        });
+        if (createListResp.getResponseCode() === 200 || createListResp.getResponseCode() === 201) {
+          const newListData = JSON.parse(createListResp.getContentText());
+          targetListId = newListData.id;
+          actualListName = newListData.title;
+        }
+      } catch (createErr) {
+        Logger.log("Notice creating task list: " + createErr.message);
+      }
+    }
+
+    if (!targetListId && allLists.length > 0) {
+      targetListId = allLists[0].id;
+      actualListName = allLists[0].title;
+    }
+    if (!targetListId) {
+      targetListId = "@default";
+    }
+
+    // 3. Insert task into resolved list
+    let createdTaskId = null;
+    let lastError = "";
+    let rawApiResponse = null;
+    try {
+      const taskPayload = {
+        title: cleanTitle,
+        notes: cleanNotes
+      };
+      const resp = UrlFetchApp.fetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(targetListId)}/tasks`, {
+        method: "post",
+        headers: headers,
+        payload: JSON.stringify(taskPayload),
+        muteHttpExceptions: true
+      });
+      const code = resp.getResponseCode();
+      const body = resp.getContentText();
+      rawApiResponse = { code: code, body: body };
+      if (code === 200 || code === 201) {
+        const json = JSON.parse(body);
+        createdTaskId = json.id;
+      } else {
+        lastError = `HTTP ${code}: ${body}`;
+      }
+    } catch (err) {
+      lastError = err.message;
+    }
+
+    // 4. Fallback to Advanced Service
+    if (!createdTaskId) {
+      try {
+        const taskObj = {
+          title: cleanTitle,
+          notes: cleanNotes
+        };
+        const advRes = Tasks.Tasks.insert(taskObj, targetListId);
+        createdTaskId = advRes.id;
+      } catch (advErr) {
+        if (!lastError) lastError = advErr.message;
+      }
+    }
+
+    if (createdTaskId) {
+      return {
+        success: true,
+        taskId: createdTaskId,
+        title: cleanTitle,
+        notes: cleanNotes,
+        listName: actualListName,
+        listId: targetListId,
+        availableLists: allLists
+      };
+    } else {
+      return { 
+        success: false, 
+        error: lastError || "Failed to create task in Google Tasks",
+        targetListId: targetListId,
+        availableLists: allLists,
+        rawApiResponse: rawApiResponse
+      };
+    }
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * 1-Click Interactive Menu Action: Post Security Checklist to Google Tasks
+ */
+function postSecurityChecklistToGoogleTasks() {
+  const title = "Rotate API Keys & Configure bdclive.github.io";
+  const notes = "1. Meta Developer: Reset App Secret for #2313276982500445\n2. Google Cloud: Add https://bdclive.github.io/* to API key referrers\n3. Firebase: Add bdclive.github.io to Auth Authorized Domains & publish database.rules.json";
+  const res = addGeneralGoogleTask(title, notes, "My Tasks");
+  const ui = SpreadsheetApp.getUi();
+  if (res.success) {
+    ui.alert("✅ Task Created Successfully!", "The security task has been added to your Google Tasks under list: '" + res.listName + "'.", ui.ButtonSet.OK);
+  } else {
+    ui.alert("⚠️ Could not create task", res.error || "Unknown error", ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * 1-Click Interactive Menu Action: Post 'food is good in my tummy' Task
+ */
+function postFoodTaskToGoogleTasks() {
+  const title = "food is good in my tummy";
+  const notes = "Added via Antigravity AI";
+  const res = addGeneralGoogleTask(title, notes, "My Tasks");
+  const ui = SpreadsheetApp.getUi();
+  if (res.success) {
+    ui.alert("🎉 Task Created!", `Successfully added "${title}" to your Google Tasks under list: '${res.listName}'!`, ui.ButtonSet.OK);
+  } else {
+    ui.alert("⚠️ Could not create task", res.error || "Unknown error", ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Interactive Prompt: Type any task title and push to Google Tasks instantly
+ */
+function addCustomTaskFromMenu() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt("➕ Add Custom Task to Google Tasks", "Enter task title (e.g. food is good in my tummy):", ui.ButtonSet.OK_CANCEL);
+  
+  if (response.getSelectedButton() === ui.Button.OK) {
+    const title = response.getResponseText().trim();
+    if (!title) {
+      ui.alert("⚠️ Empty Title", "Please enter a task title.", ui.ButtonSet.OK);
+      return;
+    }
+    const notesResponse = ui.prompt("➕ Task Notes (Optional)", "Enter notes or details (or leave blank):", ui.ButtonSet.OK_CANCEL);
+    const notes = (notesResponse.getSelectedButton() === ui.Button.OK) ? notesResponse.getResponseText().trim() : "";
+    
+    const res = addGeneralGoogleTask(title, notes, "My Tasks");
+    if (res && res.success) {
+      ui.alert("🎉 Task Created!", `Successfully added "${title}" to Google Tasks under list: '${res.listName}'!`, ui.ButtonSet.OK);
+    } else {
+      ui.alert("⚠️ Error", res ? res.error : "Failed to create task.", ui.ButtonSet.OK);
+    }
+  }
+}
+
+/**
  * 1-Click Interactive Test for Google Tasks Integration
  * Run from menu: 🎯 Fun Fact Tracker > 📌 Test Post to Google Tasks App
  */
@@ -1450,17 +1655,17 @@ function setupMidnightTrigger() {
  * Web App REST Endpoint (GET)
  */
 function doGet(e) {
-  // Only init if sheets are missing — do NOT call on every request to avoid overwriting headers
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(SHEET_NAME) || !ss.getSheetByName(SETTINGS_SHEET)) {
-    initSpreadsheet();
-  }
-  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getFacts";
-  
   let responseData = {};
 
   try {
-    if (action === "getFacts") {
+    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getFacts";
+
+    if (action === "createTask" || action === "addGoogleTask") {
+      const title = e.parameter.title || "New Task";
+      const notes = e.parameter.notes || "";
+      const listName = e.parameter.listName || e.parameter.listTitle || "My Tasks";
+      responseData = addGeneralGoogleTask(title, notes, listName);
+    } else if (action === "getFacts") {
       responseData = { success: true, facts: getAllFacts() };
     } else if (action === "getStats") {
       const facts = getAllFacts();
@@ -1500,11 +1705,6 @@ function doGet(e) {
  * Web App REST Endpoint (POST)
  */
 function doPost(e) {
-  // Only init if sheets are missing — do NOT call on every request to avoid overwriting headers
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss.getSheetByName(SHEET_NAME) || !ss.getSheetByName(SETTINGS_SHEET)) {
-    initSpreadsheet();
-  }
   let postData = {};
   
   try {
@@ -1520,7 +1720,10 @@ function doPost(e) {
   let responseData = {};
 
   try {
-    if (action === "checkDuplicate") {
+    if (action === "createTask" || action === "addGoogleTask") {
+      const taskResult = addGeneralGoogleTask(postData.title, postData.notes, postData.listName || postData.listTitle || "My Tasks");
+      responseData = taskResult;
+    } else if (action === "checkDuplicate") {
       const result = checkDuplicate(postData.factText);
       responseData = { success: true, duplicateReport: result };
     } else if (action === "addFact") {

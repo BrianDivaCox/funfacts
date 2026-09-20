@@ -23,6 +23,13 @@ scratch/
 scratch/*
 temp/
 tmp/
+*.bat
+*.ps1
+*.py
+*.pyw
+*.zip
+*.tar.gz
+backups/
 *.py
 *.cjs
 *.mjs
