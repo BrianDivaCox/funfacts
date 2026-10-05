@@ -2,6 +2,16 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.3.0] - 2026-10-05
+
+### Added & Optimized
+- Added fast inverted keyword indexing for instant duplicate scanning.
+- Created dedicated Duplicates Archive tab to store repeated facts.
+- Added one-click tool to move duplicates into the archive.
+- Grouped duplicate facts with repeat counters like Repeat #1.
+- Styled Duplicates Archive tab with deep amethyst theme.
+- Synced new Web App deployment across all automation scripts.
+
 ## [5.2.1] - 2026-10-05
 
 ### Cleaned

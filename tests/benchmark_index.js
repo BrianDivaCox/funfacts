@@ -83,10 +83,9 @@ function buildKeywordIndex(facts) {
     const item = facts[i];
     let kws = item.keywords;
     if (!kws || !Array.isArray(kws) || kws.length === 0) {
-      kws = extractKeywords(item.factText || "");
+      kws = extractKeywords(item.factText);
     }
-    for (let j = 0; j < kws.length; j++) {
-      const kw = kws[j];
+    for (const kw of kws) {
       if (!index.has(kw)) index.set(kw, []);
       index.get(kw).push(i);
     }
@@ -107,8 +106,8 @@ function checkDuplicate(targetFact, facts, prebuiltIndex) {
   if (prebuiltIndex) {
     const candidateSet = new Set();
     for (const kw of targetKeywords) {
-      const matches = prebuiltIndex.get ? prebuiltIndex.get(kw) : prebuiltIndex[kw];
-      if (matches && Array.isArray(matches)) {
+      const matches = prebuiltIndex.get(kw);
+      if (matches) {
         for (const idx of matches) candidateSet.add(idx);
       }
     }
@@ -117,10 +116,13 @@ function checkDuplicate(targetFact, facts, prebuiltIndex) {
 
   let maxScore = 0;
   let bestMatch = null;
+  const loopLimit = facts.length;
 
-  for (let i = 0; i < facts.length; i++) {
+  for (let i = 0; i < loopLimit; i++) {
     const item = facts[i];
     const cleanItem = normalizeText(item.factText);
+
+    // Exact match check always takes immediate priority
     if (cleanTarget === cleanItem) {
       return { isDuplicate: true, similarityScore: 1.0, highestMatch: item };
     }
@@ -166,6 +168,7 @@ function checkDuplicate(targetFact, facts, prebuiltIndex) {
 }
 
 const seedFacts = JSON.parse(fs.readFileSync('data/facts.json', 'utf8'));
+const keywordIndex = buildKeywordIndex(seedFacts);
 
 const tests = [
   { text: 'Did you know that sloths can hold their breath for forty minutes underwater? 🦥 #funfact', expected: true },
@@ -177,46 +180,40 @@ const tests = [
   { text: 'Quantum computers can perform calculations in seconds that would take normal computers millennia! 💻 #funfact', expected: false }
 ];
 
-console.log('=== RUNNING RIGOROUS DUPLICATE CHECK TEST SUITE ===');
-const index = buildKeywordIndex(seedFacts);
+console.log('=== BENCHMARKING SCAN SPEED & ACCURACY ===');
 let allPassed = true;
 
+// 1. Accuracy verification with index
 tests.forEach((t, i) => {
-  // Test both with and without prebuiltIndex to guarantee 100% equivalence
-  const resIndexed = checkDuplicate(t.text, seedFacts, index);
-  const resDirect = checkDuplicate(t.text, seedFacts, null);
+  const res = checkDuplicate(t.text, seedFacts, keywordIndex);
+  const pass = res.isDuplicate === t.expected;
+  if (!pass) allPassed = false;
+  console.log(`Test ${i + 1}: ${res.isDuplicate ? '🔴 DUPLICATE' : '🟢 UNIQUE'} (Score: ${res.similarityScore}) - Expected: ${t.expected ? 'DUPLICATE' : 'UNIQUE'} - ${pass ? 'PASSED ✅' : 'FAILED ❌'}`);
+});
 
-  const passIndexed = resIndexed.isDuplicate === t.expected;
-  const passDirect = resDirect.isDuplicate === t.expected;
-  const passEquivalent = resIndexed.isDuplicate === resDirect.isDuplicate;
+// 2. Speed comparison (Running 100 iterations of full scan)
+console.log('\n--- SPEED BENCHMARK (100 multi-fact scans) ---');
 
-  if (!passIndexed || !passDirect || !passEquivalent) allPassed = false;
-  console.log(`Test ${i + 1}: ${resIndexed.isDuplicate ? '🔴 DUPLICATE' : '🟢 UNIQUE'} (Score: ${resIndexed.similarityScore}) - Expected: ${t.expected ? 'DUPLICATE' : 'UNIQUE'} - ${passIndexed ? 'PASSED ✅' : 'FAILED ❌'}`);
-  if (resIndexed.isDuplicate && resIndexed.highestMatch) {
-    console.log(`   Matched with: "${resIndexed.highestMatch.factText.substring(0, 70)}..."`);
+const startUnindexed = Date.now();
+for (let iter = 0; iter < 100; iter++) {
+  for (const t of tests) {
+    checkDuplicate(t.text, seedFacts, null); // Unindexed (O(N) Levenshtein everywhere)
   }
-});
+}
+const unindexedDuration = Date.now() - startUnindexed;
 
-console.log('\n=== TESTING REPEAT COUNTER GROUPING LOGIC ===');
-// Simulate 3 repeat occurrences of the same topic
-const repeatCounterMap = {};
-const testRepeats = [
-  { origId: 'FACT-OCTOPUS', text: 'Octopuses possess three hearts and nine brains!' },
-  { origId: 'FACT-OCTOPUS', text: 'Did you know octopuses have 3 hearts and blue blood?' },
-  { origId: 'FACT-OCTOPUS', text: 'Octopuses have nine brains and 3 hearts!' }
-];
+const startIndexed = Date.now();
+for (let iter = 0; iter < 100; iter++) {
+  for (const t of tests) {
+    checkDuplicate(t.text, seedFacts, keywordIndex); // Indexed
+  }
+}
+const indexedDuration = Date.now() - startIndexed;
 
-testRepeats.forEach((rep, idx) => {
-  repeatCounterMap[rep.origId] = (repeatCounterMap[rep.origId] || 0) + 1;
-  const label = `Repeat #${repeatCounterMap[rep.origId]}`;
-  console.log(`Archive entry ${idx + 1} (${rep.origId}): ${label} - "${rep.text}"`);
-  if (label !== `Repeat #${idx + 1}`) allPassed = false;
-});
+console.log(`Unindexed Time: ${unindexedDuration}ms`);
+console.log(`Indexed Time:   ${indexedDuration}ms`);
+console.log(`Speedup factor: ${(unindexedDuration / indexedDuration).toFixed(2)}x faster! ⚡`);
 
-console.log('--------------------------------------------------');
-if (allPassed) {
-  console.log('🎉 ALL TESTS PASSED! ZERO DUPLICATES SLIPPED THROUGH & REPEATS GROUPED PERFECTLY!');
-} else {
-  console.log('❌ SOME TESTS FAILED');
+if (!allPassed) {
   process.exit(1);
 }

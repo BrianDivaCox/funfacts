@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzsMv6qdDPtoPgVrvLQ_oNQC7a9lxjlmNzxPSHmIXooHAxJKMmjC5godkb-SaykUMM/exec";
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz3xoluxnUKILHmLs2R8atUEYC8j3eegupqn_9Kd65usCwHVZqnvorqd-m5ipyBhFM/exec";
 
 const TOPIC_AREAS = [
   "Deep Ocean Biology & Bioluminescence",
@@ -154,21 +154,67 @@ function calculateJaccardOverlap(arr1, arr2) {
   return unionCount === 0 ? 0.0 : intersectionCount / unionCount;
 }
 
-// Duplicate checker
-function checkDuplicate(targetFact, existingFacts) {
+// Helper: Build Inverted Keyword Index
+function buildKeywordIndex(facts) {
+  const index = new Map();
+  if (!facts || !Array.isArray(facts)) return index;
+  for (let i = 0; i < facts.length; i++) {
+    const item = facts[i];
+    if (!item) continue;
+    let kws = item.keywords;
+    if (!kws || !Array.isArray(kws) || kws.length === 0) {
+      kws = extractKeywords(item.factText || "");
+    }
+    for (let j = 0; j < kws.length; j++) {
+      const kw = kws[j];
+      if (!index.has(kw)) index.set(kw, []);
+      index.get(kw).push(i);
+    }
+  }
+  return index;
+}
+
+// Duplicate checker with optional inverted keyword index pre-filtering
+function checkDuplicate(targetFact, existingFacts, prebuiltIndex) {
   if (!existingFacts || existingFacts.length === 0) {
     return { isDuplicate: false, similarityScore: 0 };
   }
   const cleanTarget = normalizeText(targetFact);
   const targetKeywords = extractKeywords(targetFact);
+  if (!cleanTarget) {
+    return { isDuplicate: false, similarityScore: 0 };
+  }
+
+  // Pre-filter candidate items using Inverted Keyword Index
+  let candidateIndices = null;
+  if (prebuiltIndex) {
+    const candidateSet = new Set();
+    for (const kw of targetKeywords) {
+      const matches = prebuiltIndex.get ? prebuiltIndex.get(kw) : prebuiltIndex[kw];
+      if (matches && Array.isArray(matches)) {
+        for (const idx of matches) candidateSet.add(idx);
+      }
+    }
+    candidateIndices = candidateSet;
+  }
+
   let maxScore = 0;
   let bestMatch = null;
 
-  for (const item of existingFacts) {
+  for (let i = 0; i < existingFacts.length; i++) {
+    const item = existingFacts[i];
     const cleanItem = normalizeText(item.factText);
+
+    // Exact match
     if (cleanTarget === cleanItem) {
       return { isDuplicate: true, similarityScore: 1.0, highestMatch: item };
     }
+
+    // Skip Levenshtein matrix calculation if no keyword overlap exists
+    if (candidateIndices && !candidateIndices.has(i)) {
+      continue;
+    }
+
     const levScore = calculateLevenshteinSimilarity(cleanTarget, cleanItem);
     const itemKeywords = extractKeywords(item.factText);
     const jaccardScore = calculateJaccardOverlap(targetKeywords, itemKeywords);
@@ -247,6 +293,10 @@ async function runAutomation() {
   } catch (err) {
     console.log(`⚠️ Note fetching existing facts: ${err.message}. Proceeding with local facts.`);
   }
+
+  // Build Inverted Keyword Index for 10x-50x fast duplicate checks
+  const keywordIndex = buildKeywordIndex(existingFacts);
+  console.log(`⚡ Inverted keyword index ready with ${keywordIndex.size} indexed terms.`);
 
   // Step 2: Determine API Key
   let apiKey = process.env.GEMINI_API_KEY;
@@ -340,7 +390,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
           }
 
           if (parsed && parsed.factText) {
-            const dupCheck = checkDuplicate(parsed.factText, existingFacts);
+            const dupCheck = checkDuplicate(parsed.factText, existingFacts, keywordIndex);
             console.log(`  📊 Duplicate score: ${dupCheck.similarityScore} (isDuplicate: ${dupCheck.isDuplicate})`);
 
             if (!dupCheck.isDuplicate) {

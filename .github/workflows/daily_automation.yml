@@ -37,6 +37,6 @@ jobs:
       - name: Run Daily Fun Fact Automation
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzsMv6qdDPtoPgVrvLQ_oNQC7a9lxjlmNzxPSHmIXooHAxJKMmjC5godkb-SaykUMM/exec"
+          WEB_APP_URL: "https://script.google.com/macros/s/AKfycbz3xoluxnUKILHmLs2R8atUEYC8j3eegupqn_9Kd65usCwHVZqnvorqd-m5ipyBhFM/exec"
         run: node scripts/daily_automation.js
 
