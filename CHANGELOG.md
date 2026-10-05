@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.2.1] - 2026-10-05
+
+### Cleaned
+- Purged dead test functions from Google Apps Script backend.
+- Pushed clean, production-ready codebase to Google Apps Script.
+
 ## [5.2.0] - 2026-10-05
 
 ### Changed

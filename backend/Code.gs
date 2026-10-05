@@ -1163,35 +1163,7 @@ function addGeneralGoogleTask(title, notes, listTitle) {
   }
 }
 
-/**
- * 1-Click Interactive Menu Action: Post Security Checklist to Google Tasks
- */
-function postSecurityChecklistToGoogleTasks() {
-  const title = "Rotate API Keys & Configure bdclive.github.io";
-  const notes = "1. Meta Developer: Reset App Secret for #2313276982500445\n2. Google Cloud: Add https://bdclive.github.io/* to API key referrers\n3. Firebase: Add bdclive.github.io to Auth Authorized Domains & publish database.rules.json";
-  const res = addGeneralGoogleTask(title, notes, "My Tasks");
-  const ui = SpreadsheetApp.getUi();
-  if (res.success) {
-    ui.alert("✅ Task Created Successfully!", "The security task has been added to your Google Tasks under list: '" + res.listName + "'.", ui.ButtonSet.OK);
-  } else {
-    ui.alert("⚠️ Could not create task", res.error || "Unknown error", ui.ButtonSet.OK);
-  }
-}
 
-/**
- * 1-Click Interactive Menu Action: Post 'food is good in my tummy' Task
- */
-function postFoodTaskToGoogleTasks() {
-  const title = "food is good in my tummy";
-  const notes = "Added via Antigravity AI";
-  const res = addGeneralGoogleTask(title, notes, "My Tasks");
-  const ui = SpreadsheetApp.getUi();
-  if (res.success) {
-    ui.alert("🎉 Task Created!", `Successfully added "${title}" to your Google Tasks under list: '${res.listName}'!`, ui.ButtonSet.OK);
-  } else {
-    ui.alert("⚠️ Could not create task", res.error || "Unknown error", ui.ButtonSet.OK);
-  }
-}
 
 /**
  * Interactive Prompt: Type any task title and push to Google Tasks instantly
