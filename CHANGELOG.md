@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.1.1] - 2026-10-05
+
+### Updated
+- Deployed Web App version 31 with upgraded backend.
+- Synchronized Web App API URLs across all project files.
+
 ## [5.1.0] - 2026-10-05
 
 ### Fixed & Enhanced

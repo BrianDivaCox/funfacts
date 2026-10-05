@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxy4eoe4_VceSJrSxzX-tstmnLuRGKKkMr_VNoarVgRf5Qh-ByEGQwwJb9qqtmSIpI/exec";
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzsMv6qdDPtoPgVrvLQ_oNQC7a9lxjlmNzxPSHmIXooHAxJKMmjC5godkb-SaykUMM/exec";
 
 const TOPIC_AREAS = [
   "Deep Ocean Biology & Bioluminescence",
