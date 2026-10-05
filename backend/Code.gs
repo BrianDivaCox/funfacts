@@ -18,20 +18,23 @@ const SETTINGS_SHEET = "Settings";
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
+
+  const tasksMenu = ui.createMenu("📌 Google Tasks")
+    .addItem("Sync Recent Facts to Tasks", "syncMissingFactsToGoogleTasks")
+    .addItem("Clean Completed Tasks", "cleanOldGoogleTasks");
+
+  const toolsMenu = ui.createMenu("⚙️ Settings & Tools")
+    .addItem("Format Sheet Theme", "formatSheetArtistically")
+    .addItem("Setup 12:00 AM Auto-Pilot", "setupMidnightTrigger")
+    .addItem("Initialize / Reset Sheet", "initSpreadsheet");
+
   ui.createMenu("🎯 Fun Fact Tracker")
-    .addItem("📊 Initialize / Seed Fact Log", "initSpreadsheet")
-    .addItem("🧠 Run Daily Fun Fact Automation Now", "dailyMidnightTrigger")
-    .addItem("✨ Generate 5 Fresh Fun Facts Now", "generate5FreshFactsNow")
-    .addItem("⏰ Setup 12:00 AM Midnight Auto-Pilot", "setupMidnightTrigger")
+    .addItem("✨ Generate Daily Fact Now", "dailyMidnightTrigger")
+    .addItem("🎲 Generate 5 Fresh Facts", "generate5FreshFactsNow")
+    .addItem("🔍 Re-Scan for Duplicates", "reScanAllDuplicates")
     .addSeparator()
-    .addItem("🍔 Post 'food is good in my tummy' Task", "postFoodTaskToGoogleTasks")
-    .addItem("➕ Add Custom Task to Google Tasks (Prompt)", "addCustomTaskFromMenu")
-    .addItem("🔒 Post Security Checklist to Google Tasks", "postSecurityChecklistToGoogleTasks")
-    .addItem("📌 Sync Recent Facts to Google Tasks", "syncMissingFactsToGoogleTasks")
-    .addItem("🧹 Clean Completed / Old Tasks from Google Tasks", "cleanOldGoogleTasks")
-    .addItem("📌 Test Post to Google Tasks App", "testPostToGoogleTasks")
-    .addItem("🔍 Re-Scan All Facts for Duplicates", "reScanAllDuplicates")
-    .addItem("🎨 Apply Beautiful Theme & Formatting", "formatSheetArtistically")
+    .addSubMenu(tasksMenu)
+    .addSubMenu(toolsMenu)
     .addToUi();
 }
 

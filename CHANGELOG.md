@@ -2,6 +2,12 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.2.0] - 2026-10-05
+
+### Changed
+- Decluttered Google Sheet menu with clean, organized submenus.
+- Removed obsolete test tasks and temporary testing buttons.
+
 ## [5.1.1] - 2026-10-05
 
 ### Updated
