@@ -2,6 +2,14 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.1.0] - 2026-10-05
+
+### Fixed & Enhanced
+- Upgraded duplicate detection to catch all rephrased facts.
+- Added number normalization so digits and words match.
+- Fixed keyword stemming to eliminate plural mismatch bugs.
+- Bundled offline facts database for reliable duplicate checking.
+
 ## [5.0.1] - 2026-08-14
 
 ### Fixed

@@ -57,14 +57,23 @@ const MODELS_TO_TRY = [
   "gemini-3.1-pro"
 ];
 
-// Helper: Normalize text
+// Helper: Normalize text with number normalization
 function normalizeText(text) {
   if (!text) return "";
-  return text
+  let clean = text
     .toLowerCase()
     .replace(/[^\w\s]/gi, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  const numMap = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+    "ten": "10", "twenty": "20", "thirty": "30", "forty": "40",
+    "fifty": "50", "sixty": "60", "seventy": "70", "eighty": "80",
+    "ninety": "90", "hundred": "100", "thousand": "1000", "million": "1000000"
+  };
+  return clean.split(" ").map(w => numMap[w] || w).join(" ");
 }
 
 // Helper: Minimal English stemmer
@@ -161,9 +170,7 @@ function checkDuplicate(targetFact, existingFacts) {
       return { isDuplicate: true, similarityScore: 1.0, highestMatch: item };
     }
     const levScore = calculateLevenshteinSimilarity(cleanTarget, cleanItem);
-    const itemKeywords = item.keywords && item.keywords.length > 0
-      ? item.keywords.map(k => k.toLowerCase())
-      : extractKeywords(item.factText);
+    const itemKeywords = extractKeywords(item.factText);
     const jaccardScore = calculateJaccardOverlap(targetKeywords, itemKeywords);
 
     // Tier 4: Core Topic Overlap (Count of matching stemmed keywords)
@@ -177,6 +184,11 @@ function checkDuplicate(targetFact, existingFacts) {
     if (matchingKeywordCount >= 3) {
       const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
       combinedScore = Math.max(combinedScore, 0.55 + (densityScore * 0.45));
+    } else if (matchingKeywordCount === 2) {
+      const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
+      if (densityScore >= 0.40) {
+        combinedScore = Math.max(combinedScore, 0.50 + (densityScore * 0.40));
+      }
     }
 
     if (combinedScore > maxScore) {
@@ -196,23 +208,44 @@ async function runAutomation() {
   console.log("🚀 Starting Daily Fun Fact Automation (GitHub Actions / Node.js)");
   const webAppUrl = process.env.WEB_APP_URL || DEFAULT_WEB_APP_URL;
 
-  // Step 1: Fetch existing facts from Web App safely
-  console.log(`📡 Fetching existing facts from Web App: ${webAppUrl}...`);
+  // Step 1: Load baseline historical facts from local data/facts.json
   let existingFacts = [];
+  const localFactsPath = path.join(__dirname, '..', 'data', 'facts.json');
+  try {
+    if (fs.existsSync(localFactsPath)) {
+      const localData = JSON.parse(fs.readFileSync(localFactsPath, 'utf8'));
+      if (Array.isArray(localData) && localData.length > 0) {
+        existingFacts = localData;
+        console.log(`📂 Loaded ${existingFacts.length} baseline facts from local data/facts.json.`);
+      }
+    }
+  } catch (err) {
+    console.log(`Notice reading local facts.json: ${err.message}`);
+  }
+
+  // Then try to fetch any fresh online facts from Web App safely
+  console.log(`📡 Fetching latest facts from Web App: ${webAppUrl}...`);
   try {
     const factsRes = await fetch(`${webAppUrl}?action=getFacts`);
     const resText = await factsRes.text();
     if (resText.trim().startsWith("{") || resText.trim().startsWith("[")) {
       const factsData = JSON.parse(resText);
-      if (factsData.success && Array.isArray(factsData.facts)) {
-        existingFacts = factsData.facts;
-        console.log(`✅ Loaded ${existingFacts.length} existing facts from Google Sheet.`);
+      if (factsData.success && Array.isArray(factsData.facts) && factsData.facts.length > 0) {
+        // Merge without duplicates based on factText
+        const knownTexts = new Set(existingFacts.map(f => normalizeText(f.factText)));
+        for (const f of factsData.facts) {
+          if (!knownTexts.has(normalizeText(f.factText))) {
+            existingFacts.push(f);
+            knownTexts.add(normalizeText(f.factText));
+          }
+        }
+        console.log(`✅ Synced with Google Sheet! Total facts database: ${existingFacts.length}.`);
       }
     } else {
-      console.log("ℹ️ Web App returned HTML (Google Sign-in redirect). To enable direct API reading, set 'Who has access' to 'Anyone' in Apps Script Deploy settings.");
+      console.log("ℹ️ Web App returned HTML (Google Sign-in redirect). Using local facts database.");
     }
   } catch (err) {
-    console.log(`⚠️ Note fetching existing facts: ${err.message}. Proceeding with default history context.`);
+    console.log(`⚠️ Note fetching existing facts: ${err.message}. Proceeding with local facts.`);
   }
 
   // Step 2: Determine API Key
@@ -344,7 +377,30 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
     throw new Error(`Failed to generate non-duplicate fact. Last detail: ${lastErrorDetail}`);
   }
 
-  // Step 3: Save to Web App (Appends to Google Sheet & syncs Google Keep)
+  // Step 3: Persist to local data/facts.json
+  try {
+    const localFactsPath = path.join(__dirname, '..', 'data', 'facts.json');
+    let localList = [];
+    if (fs.existsSync(localFactsPath)) {
+      localList = JSON.parse(fs.readFileSync(localFactsPath, 'utf8'));
+    }
+    localList.push({
+      id: "FACT-" + Date.now(),
+      date: new Date().toISOString(),
+      factText: uniqueFact.factText,
+      category: uniqueFact.category,
+      keywords: uniqueFact.keywords,
+      similarityScore: uniqueFact.similarityScore,
+      status: "Posted",
+      source: "GitHub Actions Midnight Automation"
+    });
+    fs.writeFileSync(localFactsPath, JSON.stringify(localList, null, 2));
+    console.log(`📁 Saved new fact to local data/facts.json (Total: ${localList.length}).`);
+  } catch (err) {
+    console.log(`Notice saving local facts.json: ${err.message}`);
+  }
+
+  // Step 4: Save to Web App (Appends to Google Sheet & syncs Google Tasks/Keep)
   console.log("💾 Saving unique fact to Google Sheet & Google Keep via Web App REST POST...");
   try {
     const saveRes = await fetch(webAppUrl, {

@@ -456,10 +456,8 @@ function checkDuplicate(targetFact, existingFactsList) {
     // Tier 2: Normalized Levenshtein Similarity
     const levScore = calculateLevenshteinSimilarity(cleanTarget, cleanItem);
 
-    // Tier 3: Jaccard Keyword Overlap Ratio
-    const itemKeywords = item.keywords && item.keywords.length > 0 
-      ? item.keywords.map(k => k.toLowerCase()) 
-      : extractKeywords(item.factText);
+    // Tier 3: Jaccard Keyword Overlap Ratio (ALWAYS extract & stem dynamically from actual text)
+    const itemKeywords = extractKeywords(item.factText);
     const jaccardScore = calculateJaccardOverlap(targetKeywords, itemKeywords);
 
     // Tier 4: Core Topic Overlap (Count of matching stemmed keywords)
@@ -472,10 +470,15 @@ function checkDuplicate(targetFact, existingFactsList) {
     // Combined Weighted Score (Maximum of Levenshtein, Jaccard, or Keyword Density)
     let combinedScore = Math.max(levScore, jaccardScore);
 
-    // Core Topic Guard: If 3 or more significant keywords match (e.g., "wombat", "poop", "cube"), boost score
+    // Core Topic Guard: Boost score if 2+ core topic keywords match
     if (matchingKeywordCount >= 3) {
       const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
       combinedScore = Math.max(combinedScore, 0.55 + (densityScore * 0.45));
+    } else if (matchingKeywordCount === 2) {
+      const densityScore = matchingKeywordCount / Math.min(targetKeywords.length, itemKeywords.length);
+      if (densityScore >= 0.40) {
+        combinedScore = Math.max(combinedScore, 0.50 + (densityScore * 0.40));
+      }
     }
 
     if (combinedScore > maxScore) {
@@ -485,6 +488,8 @@ function checkDuplicate(targetFact, existingFactsList) {
         matchReason = "Exact normalized text match";
       } else if (matchingKeywordCount >= 3) {
         matchReason = `Core topic match (${matchingKeywordCount} matching keywords: ${targetKeywords.filter(k => itemKeywords.includes(k)).join(', ')})`;
+      } else if (matchingKeywordCount === 2) {
+        matchReason = `Key topic match (${matchingKeywordCount} matching keywords: ${targetKeywords.filter(k => itemKeywords.includes(k)).join(', ')})`;
       } else if (levScore > 0.70) {
         matchReason = `High textual similarity (${(levScore * 100).toFixed(1)}%)`;
       } else if (jaccardScore > 0.5) {
@@ -495,9 +500,12 @@ function checkDuplicate(targetFact, existingFactsList) {
     }
   }
 
-  // Threshold: default to 0.50 for strict duplicate prevention
+  // Threshold: hard-capped at 0.50 for absolute duplicate prevention
+  let threshold = 0.50;
   const thresholdSetting = parseFloat(getSetting("STRICTNESS_THRESHOLD"));
-  const threshold = (thresholdSetting && !isNaN(thresholdSetting)) ? thresholdSetting : 0.50;
+  if (thresholdSetting && !isNaN(thresholdSetting) && thresholdSetting <= 0.50) {
+    threshold = thresholdSetting;
+  }
   const isDup = maxScore >= threshold;
 
   return {
@@ -509,15 +517,24 @@ function checkDuplicate(targetFact, existingFactsList) {
 }
 
 /**
- * Text Normalization helper
+ * Text Normalization helper with number-word normalization
  */
 function normalizeText(text) {
   if (!text) return "";
-  return text
+  let clean = text
     .toLowerCase()
     .replace(/[^\w\s]/gi, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  const numMap = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+    "ten": "10", "twenty": "20", "thirty": "30", "forty": "40",
+    "fifty": "50", "sixty": "60", "seventy": "70", "eighty": "80",
+    "ninety": "90", "hundred": "100", "thousand": "1000", "million": "1000000"
+  };
+  return clean.split(" ").map(w => numMap[w] || w).join(" ");
 }
 
 /**
@@ -1740,8 +1757,8 @@ function doPost(e) {
           factText: postData.factText,
           category: postData.category || "General",
           keywords: postData.keywords || extractKeywords(postData.factText),
-          similarityScore: dupCheck.similarityScore,
-          status: postData.status || "Used",
+          status: dupCheck.isDuplicate ? "Duplicate (Flagged)" : (postData.status || "Queued"),
+          force: Boolean(postData.force),
           source: postData.source || "Manual Entry"
         });
         responseData = { success: true, fact: saved };
