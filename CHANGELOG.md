@@ -41,369 +41,342 @@ All notable changes to the Fun Fact Tracker project will be documented in this f
 ## [5.0.1] - 2026-08-14
 
 ### Fixed
-- **Complete Elimination of `setNumberFormat` & Typed Column Protection**: Completely removed `.setNumberFormat()` calls from all script files and protected every individual cell styling operation in `formatSheetArtistically()` with individual `try/catch` guards, permanently eliminating `Exception: You can't set the number format of cells in a typed column`.
+- Removed setNumberFormat calls to prevent typed column errors.
+- Added try-catch guards to all sheet styling operations.
 
 ## [5.0.0] - 2026-08-14
 
 ### Major Update
-- **Strict Verified Status Pipeline (`saveFactToSheet` & `syncMissingFactsToGoogleTasks`)**:
-  - `Status` is strictly set to **`"Posted"`** ONLY AFTER Google Tasks API returns a verified task ID (`GTASK-xxxxx`). If the task is pending or un-pushed, it remains **`"Queued"`**.
-  - Integrated active duplicate scanning directly into `syncMissingFactsToGoogleTasks()` so all incoming rows are continuously checked and automatically flagged as **`"Duplicate (Flagged)"`** if similarity score meets threshold.
+- Facts marked Posted only after task creation succeeds.
+- Unsynced facts remain marked as Queued.
+- Added automatic duplicate scanning to Google Tasks sync.
 
 ## [4.9.1] - 2026-08-14
 
 ### Fixed
-- **Typed Table Column Formatting Exception**: Wrapped `setNumberFormat("0.0%")` in `try/catch` block within `formatSheetArtistically()` to prevent `Exception: You can't set the number format of cells in a typed column` when formatting Google Sheets Tables.
+- Added safety guards around table percentage number formatting.
 
 ## [4.9.0] - 2026-08-14
 
 ### Changed
-- **Dedicated `FunFacts` Google Tasks List Placement**: Updated `postToGoogleTasks()` to explicitly locate (or auto-create) the **`FunFacts`** list tab in Google Tasks via REST API, ensuring all new fun facts are organized neatly in your dedicated `FunFacts` list.
+- Placed new fun facts directly into dedicated FunFacts list.
 
 ## [4.8.0] - 2026-08-14
 
 ### Upgraded & Fixed
-- **Direct OAuth REST Token Integration for Google Tasks (`postToGoogleTasks`)**:
-  - Upgraded `postToGoogleTasks()` in `backend/Code.gs` to use direct `UrlFetchApp` REST HTTP calls with `ScriptApp.getOAuthToken()`.
-  - Guarantees 100% reliable Google Tasks creation during anonymous Web App `doPost` calls from GitHub Actions without depending on session-restricted Advanced Services wrappers.
+- Switched Google Tasks integration to direct OAuth REST requests.
+- Ensured reliable task creation from GitHub Actions runs.
 
 ## [4.7.0] - 2026-08-12
 
 ### Fixed
-- **Google Tasks Sync Filter Bug**: Fixed `syncMissingFactsToGoogleTasks()` filtering in `backend/Code.gs` where new facts added by GitHub Actions (with `KEEP-17...` timestamps) were accidentally matching the historical seed filter (`KEEP-1...`).
-- Added exact regex `/^KEEP-10\d{2}$/` matching for historical seeds and explicit `GTASK-` prefix tracking, ensuring 100% of newly generated daily facts from GitHub Actions sync into Google Tasks.
+- Fixed Google Tasks sync filter matching historical seed timestamps.
+- Added regex matching to ensure all new facts sync.
 
 ## [4.6.1] - 2026-08-11
 
 ### Fixed
-- **Missing `script.scriptapp` OAuth Scope**: Added `https://www.googleapis.com/auth/script.scriptapp` and `https://www.googleapis.com/auth/script.container.ui` to `backend/appsscript.json`, fixing `ScriptApp.getProjectTriggers` permission exception.
+- Added missing script OAuth scopes to project manifest.
 
 ## [4.6.0] - 2026-08-11
 
 ### Added
-- **Automated Hourly Background Google Tasks Sync Trigger (`setupMidnightTrigger`)**:
-  - Updated `setupMidnightTrigger()` to automatically install an hourly time-driven trigger (`syncMissingFactsToGoogleTasks`).
-  - Automatically picks up any new facts posted by GitHub Actions to Google Sheets and posts them directly to your Google Tasks App without manual intervention.
+- Added automated hourly trigger for background Google Tasks syncing.
+- Automatically pushes new facts from Sheets to Google Tasks.
 
 ## [4.5.0] - 2026-08-09
 
 ### Enhanced
-- **Smart Recent-Only Sync (`syncMissingFactsToGoogleTasks`)**:
-  - Filtered Google Tasks sync to ONLY sync fresh/active facts (added in the last 7 days or status `Posted`/`Queued`).
-  - Automatically skips the 64 historical seed facts so your Google Tasks list is never flooded with old historical entries.
-- **1-Click Google Tasks Clean-Up (`cleanOldGoogleTasks`)**:
-  - Added menu item `🧹 Clean Completed / Old Tasks from Google Tasks` in Google Sheets to purge completed or old fun fact tasks with 1 click.
+- Filtered Google Tasks sync to recent facts only.
+- Added one-click tool to clean completed Google Tasks.
 
 ## [4.4.0] - 2026-08-09
 
 ### Added
-- **Google Tasks Catch-Up & Auto-Sync Engine (`syncMissingFactsToGoogleTasks`)**:
-  - Added menu item `📌 Sync All Sheet Facts to Google Tasks` in Google Sheets to retroactively sync any facts added to Google Sheets (including those added by GitHub Actions or Web App) directly to your Google Tasks App.
-  - Automatically runs `syncMissingFactsToGoogleTasks()` inside the daily midnight trigger.
+- Added one-click menu item to sync sheet facts.
+- Added task sync routine to daily midnight trigger.
 
 ## [4.3.1] - 2026-08-07
 
 ### Fixed
-- **Google Tasks Explicit OAuth Authorization**: Added explicit `oauthScopes` to `backend/appsscript.json` for `https://www.googleapis.com/auth/tasks`, `https://www.googleapis.com/auth/spreadsheets`, and `https://www.googleapis.com/auth/gmail.compose`, resolving silent Google Tasks API authorization blocks during Web App execution.
+- Added explicit OAuth permissions for Tasks and Gmail compose.
 
 ## [4.3.0] - 2026-08-05
 
 ### Added
-- **1-Click Batch Generator (`generate5FreshFactsNow`)**: Added a 1-click menu action `✨ Generate 5 Fresh Fun Facts Now` in Google Sheets to instantly populate 5 brand new unique AI fun facts to both Google Sheets and Google Tasks.
+- Added one-click menu tool to generate five facts.
 
 ## [4.2.1] - 2026-08-05
 
 ### Enhanced
-- **Dual Google Tasks Placement**: Updated `postToGoogleTasks()` to post new fun facts directly to your **Primary "My Tasks" List (`@default`)** as well as your custom `"FunFacts"` list tab. Facts now pop up immediately on your main Google Tasks home screen!
+- Posted facts to both default and FunFacts task lists.
 
 ## [4.2.0] - 2026-08-04
 
 ### Fixed & Enhanced
-- **Strict Core Topic Duplicate Prevention Engine**:
-  - Removed internal 0.9 penalty multiplier on keyword overlap scores.
-  - Added **Core Topic Match Guard**: automatically flags any fact sharing 3+ key stemmed keywords (e.g. `wombat` + `poop` + `cube`) as a duplicate regardless of phrasing differences.
-  - Lowered default strictness threshold from `0.65` to `0.50` across Google Apps Script, Node.js automation script, and Web Dashboard.
+- Added core topic guard for matching key stemmed words.
+- Optimized similarity strictness threshold across all scripts.
 
 ## [4.1.3] - 2026-08-04
 
 ### Fixed
-- **Enhanced `testPostToGoogleTasks`**: Updated test function in `Code.gs` to write the test fact to **BOTH** the Google Sheet `Fact Log` tab AND the Google Tasks App simultaneously, providing complete 1-click verification for both systems.
+- Updated test function to write facts to both destinations.
 
 ## [4.1.2] - 2026-07-30
 
 ### Added
-- **1-Click Google Tasks Interactive Test (`testPostToGoogleTasks`)**: Added a test menu item `📌 Test Post to Google Tasks App` to the `🎯 Fun Fact Tracker` menu in Google Sheets. Instantly creates a test task in the Google Tasks App to verify integration.
+- Added one-click menu tool to test Google Tasks.
 
 ## [4.1.1] - 2026-07-30
 
 ### Fixed
-- **Null Safety in Google Tasks & Keep Integration**: Fixed `TypeError: Cannot read properties of undefined (reading 'trim')` by adding strict null/type validation to `postToGoogleTasks()` and `postToGoogleKeep()`.
+- Added null safety checks to Tasks and Keep integrations.
 
 ## [4.1.0] - 2026-07-30
 
 ### Added
-- **Creative Artistic Google Sheet Theme Engine (`formatSheetArtistically()`)**:
-  - **Midnight Violet Header** (`#1e1b4b` with bold white text)
-  - **Soft Alternating Row Contrast** (`#ffffff` and `#f8fafc`)
-  - **Pill Badges**:
-    - Emerald Green (`#dcfce7`) for `Posted` / `Used` status
-    - Soft Rose Red (`#fee2e2`) for `Duplicate (Flagged)` status
-    - Soft Indigo (`#e0e7ff`) for Category tags
-  - **Auto Text Wrapping**: Enabled for Fact Text (480px width) and Keywords (240px width) for effortless reading without text cut-off.
-  - **New Menu Item**: Added `🎨 Apply Beautiful Theme & Formatting` to `🎯 Fun Fact Tracker` menu in Google Sheets.
+- Added midnight violet theme formatting to Google Sheet.
+- Enabled automatic text wrapping for fact and keyword columns.
+- Added menu item to apply custom artistic theme.
 
 ## [4.0.5] - 2026-07-30
 
 ### Fixed
-- **Automatic Google Tasks & Keep Sync on `saveFactToSheet`**: Updated `saveFactToSheet` in `Code.gs` to automatically invoke `postToGoogleKeep()` and `postToGoogleTasks()` whenever any new fact is appended to the sheet.
-- **Web App Access Diagnostics**: Updated `daily_automation.js` to log explicit instructions if Web App POST returns HTTP 401 sign-in redirect.
+- Added automatic Tasks and Keep sync when saving facts.
+- Added diagnostics logging for web app authorization redirects.
 
 ## [4.0.4] - 2026-07-30
 
 ### Fixed
-- **GitHub Actions Syntax**: Fixed `Unrecognized named-value: 'secrets'` error in `.github/workflows/daily_automation.yml` by evaluating `GEMINI_API_KEY` via shell environment variable check.
+- Fixed GitHub Actions workflow secret evaluation syntax.
 
 ## [4.0.3] - 2026-07-30
 
 ### Fixed
-- **API Key Google Sheet Sync**: Updated `saveSettings()` in `app.js` to automatically POST the `GEMINI_API_KEY` to the Google Sheet `Settings` tab (Cell B2) whenever saved in the Web Dashboard.
+- Synced Gemini API key from dashboard into Settings sheet.
 
 ## [4.0.2] - 2026-07-30
 
 ### Fixed
-- **Updated GitHub Actions runner to Node.js 24**: Fixed Node.js 20 deprecation warning in `.github/workflows/daily_automation.yml`.
-- **Added Secret Validation Step**: Workflow now checks for `secrets.GEMINI_API_KEY` upfront and displays a clear 4-step setup guide with direct link if the secret is missing.
+- Upgraded GitHub Actions workflow runner to Node.js 24.
+- Added secret validation step with setup instructions.
 
 ## [4.0.0] - 2026-07-30
 
 ### Added
-- **GitHub Actions Midnight Automation (`.github/workflows/daily_automation.yml`)**: Fully automated daily midnight workflow running on GitHub Actions. Calls Gemini 3.6 Flash directly via Node.js (`scripts/daily_automation.js`), eliminating Google Apps Script `UrlFetch` daily rate limits completely!
-- **Node.js Automation Script (`scripts/daily_automation.js`)**: Standalone generator with full stemmed Levenshtein + Jaccard duplicate prevention engine. Reads facts from Web App, generates non-duplicate facts via Gemini API, and POSTs the result to Google Sheets & Google Keep.
-- **Enhanced Browser Dashboard Generator**: Updated client-side `runGeminiGenerator` in `app.js` with Gemini 3.x models (`gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`) and 36 topic domains.
+- Added GitHub Actions daily midnight automation workflow.
+- Created standalone Node.js script for automated fact generation.
+- Upgraded web dashboard with Gemini 3.x model options.
 
 ## [3.6.1] - 2026-07-30
 
 ### Fixed
-- **"Could not generate a non-duplicate fact" error**: Root cause was only 8 total attempts (2 retries × 4 models) with a 0.55 threshold being too tight for 70+ facts in the log. Three changes made:
-  - **Retries restored to 3 per model** (12 total attempts)
-  - **Threshold raised 0.55 → 0.60** — the stemmer handles real duplicates, 0.55 was causing false positives
-  - **Topic list expanded from 12 → 36 entries** covering much more obscure territory (Mycology, Cryptography, Viking Age, Cold War Spy Tech, Sleep Science, Silent Films, etc.) so Gemini gets pushed into unique territory more reliably
-- Deployed Web App API version 20 (`AKfycbw8gIUFs8yyvMuBZ4_PxxKNpBhUqRiRWurV_4prlH7w_a50U3MabSelz-2nd5rot3U`).
+- Increased retry limit to three attempts per model.
+- Adjusted duplicate similarity threshold to reduce false flags.
+- Expanded topic domain coverage to 36 distinct categories.
+- Deployed Web App API version 20 to Google Script.
 
 ## [3.6.0] - 2026-07-30
 
 ### Fixed
-- **Execution timeout protection**: Added a 5-minute runtime cap with time checks both at the model loop level and inside each retry — the script now bails out gracefully before hitting Google's hard 6-minute limit.
-- **30-second `deadline` on every UrlFetch call**: Prevents any single hanging network request from eating all remaining execution time.
-- **JSON parse crash on truncated response**: Wrapped the top-level `JSON.parse(response.getContentText())` in its own try/catch so a truncated/malformed HTTP body is caught, logged, and retried — it no longer crashes the whole run.
-- **Guard for empty/blocked candidates**: Added check for missing `candidates[0].content` before trying to read the response text (handles Gemini safety blocks).
-- **503 (overloaded) handled separately**: On a 503 the script now sleeps 3s then immediately jumps to the next model, instead of burning retries.
-- **Retries reduced from 3 → 2 per model**: Keeps total worst-case runtime well inside the 6-minute limit.
-- **Rate limit sleep reduced from 4s → 3s**: Slightly faster recovery.
-- Deployed Web App API version 19 (`AKfycbxPBnKn_ZocSAJKkl7pI4DpHouHj8o3cQIt9NvzlNtpSzvkc1ez_PxwuGkuNGQC-T4`).
+- Added five-minute runtime cap to prevent execution timeouts.
+- Set thirty-second deadline on all external network requests.
+- Added error handling for malformed or truncated responses.
+- Handled overloaded server responses with fast model fallback.
+- Deployed Web App API version 19 to Google Script.
 
 ## [3.5.0] - 2026-07-24
 
 ### Fixed
-- **Updated model chain to Gemini 3.x**: The old 2.5-era models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-latest`, `gemini-2.5-pro`) are retired/legacy as of mid-2026. Replaced with current production models per user's confirmed quota availability:
-  1. `gemini-3.6-flash` — Primary (latest flagship)
-  2. `gemini-3.5-flash` — Fallback 1
-  3. `gemini-3.5-flash-lite` — Fallback 2 (fast, low-cost)
-  4. `gemini-3.1-pro` — Fallback 3 (last resort)
-- This resolves the persistent "free_tier_requests, limit: 0" quota errors that were caused by hitting deprecated model endpoints.
-- Deployed Web App API version 18 (`AKfycbxigVCRiRIzps1crhi171sJWPolnfPwbAD5L3h1gDV9CYRXBqZpX0_xvWQfEveyk_E`).
+- Updated AI model chain to modern Gemini 3.x endpoints.
+- Resolved quota errors caused by retired legacy models.
+- Deployed Web App API version 18 to Google Script.
 
 ## [3.4.0] - 2026-07-24
 
-### Fixed - Root cause of duplicate slippage
-- **Added English word stemmer** (`stemWord()`): Words like `wombats`→`wombat`, `rolling`→`roll`, `stopped`→`stop` now reduce to the same root before comparison. This was the true root cause — two near-identical facts scored below the threshold purely because plural vs. singular forms didn't match.
-- **Lowered default `STRICTNESS_THRESHOLD` from `0.65` → `0.55`**: Gives the Jaccard+Levenshtein engine more room to catch rephrased versions of the same fact.
-- Deployed Web App API version 17 (`AKfycbwpsL87rJPhxa-AW2_AgRfd8rPr_DZBNBojAWeM_FgUvZiwzWTpzJhQ9x6JSfKNvh4`).
-
-### Note on Pro Subscription
-- Rate limit errors were from the free-tier quota cap. With a paid/Pro Gemini API key, those errors should not occur. The model chain (2.5-flash → 2.0-flash → 1.5-flash-latest → 2.5-pro) remains in place.
+### Fixed
+- Added English word stemmer to catch rephrased duplicates.
+- Tuned strictness threshold for better similarity detection.
+- Deployed Web App API version 17 to Google Script.
 
 ## [3.3.0] - 2026-07-24
 
-### Added
-- **`🔍 Re-Scan All Facts for Duplicates` menu item**: New Google Sheets menu option that re-scans every row in the Fact Log and corrects the Similarity Score + Status columns in-place. Highlights confirmed duplicates in red.
-- **`reScanAllDuplicates()` function**: Iterates chronologically through all rows, checking each fact against all prior facts using the same Levenshtein + Jaccard engine as live generation.
-
-### Fixed
-- Rows 47 and 65 (both wombat cube-poop facts) were seeded with score `0` because historical data bypass the live duplicate engine. The new re-scan tool will correctly flag them.
-- Deployed Web App API version 16 (`AKfycbxsBLX7mJ8b56Yz5WWAj2B5NQ5EbvTjkQzecejWJGO8KiqB43fIbciGczdyAmuu-tA`).
+### Added & Fixed
+- Added menu tool to rescan all facts for duplicates.
+- Added chronological duplicate scanner across all sheet rows.
+- Flagged historical duplicate facts in the fact log.
+- Deployed Web App API version 16 to Google Script.
 
 ## [3.2.0] - 2026-07-24
 
 ### Fixed
-- **Root cause of duplicate posting**: `doGet` and `doPost` were calling `initSpreadsheet()` on every single request, potentially overwriting the sheet header row and causing the fact history to not be read correctly.
-- **Hard duplicate guard added in `saveFactToSheet`**: Before writing any new fact to the sheet, the function now re-reads ALL current facts and runs a final `checkDuplicate()` call. If it's a duplicate it throws an error instead of saving.
-- **Prompt sample increased to 20 facts**: Slightly larger recent-history sample for better Gemini guidance on avoiding repeats while staying token-efficient.
-- Deployed Web App API version 15 (`AKfycbzDfM6RRksYHvJW69XYRq_SqhdSogZuFJOhefXeL7vp9MMDuLJUBRY9XKj9yLZbXtI`) and updated `app.js`.
+- Prevented spreadsheet reinitialization on every web app request.
+- Added hard duplicate guard before saving facts to sheet.
+- Expanded prompt history sample for better Gemini guidance.
+- Deployed Web App API version 15 to Google Script.
 
 ## [3.1.0] - 2026-07-24
 
 ### Added
-- Added automatic 4-second exponential backoff delay (`Utilities.sleep(4000)`) on HTTP 429 rate limits and free tier quota limits.
-- Optimized input prompt tokens by 70% (sample reduced to 15 recent facts) to prevent free tier token quota exhaustion.
-- Deployed Web App API version 14 (`AKfycbyU2nJXml9k5DDlc43WR5cZMP-vJ-WfE8-KRaJlr4llgMTZziqfJpgGDU0KqBm_8s4`) and updated `app.js`.
+- Added automatic backoff delay on rate limit errors.
+- Optimized prompt tokens to conserve API quota limits.
+- Deployed Web App API version 14 to Google Script.
 
 ## [3.0.0] - 2026-07-24
 
 ### Added
-- Auto-seeded all 64 historical Google Keep facts directly into the Google Sheet `Fact Log` tab.
-- Updated `initSpreadsheet()` and `📊 Initialize / Seed Fact Log` to automatically populate 64 historical rows.
-- Deployed Web App API version 13 (`AKfycbzPPt7bLkgGdGHK99qiqP_IPUTSxJMMRv2M11B1qr5TZMSNJou3RNzdIY1tElWwnNo`) and updated `app.js`.
+- Seeded 64 historical Google Keep facts into sheet.
+- Added automatic seeding support during sheet initialization.
+- Deployed Web App API version 13 to Google Script.
 
 ## [2.9.0] - 2026-07-24
 
 ### Added
-- Enhanced Gemini prompt diversity with random topic domain hints on each retry attempt.
-- Raised temperature to 0.95 and topP to 0.99 for maximum topic variance.
-- Deployed Web App API version 12 (`AKfycbzZj62NBj04NsPP3Yw_v6mouxz2jHyutkMK-78HtFUv-53fK8PzwjnaqjJ80Gx3hss`) and updated `app.js`.
+- Added random topic domain hints on each generation attempt.
+- Raised temperature and topP settings for maximum variety.
+- Deployed Web App API version 12 to Google Script.
 
 ## [2.8.0] - 2026-07-24
 
 ### Added
-- Updated Gemini model fallback hierarchy to strictly match user request: `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.1-pro`.
-- Deployed Web App API version 11 (`AKfycbw8qiEzbbJYHaCVmgCoFu8B2nHYS2bA4UCTg-9RlzXKFHBvtbuiG_f-b9Jw_5D4Cg`) and updated `app.js`.
+- Updated Gemini model fallback hierarchy to 3.x models.
+- Deployed Web App API version 11 to Google Script.
 
 ## [2.7.0] - 2026-07-24
 
 ### Added
-- Added `gemini-3.6-flash` and `gemini-3-flash` to top of model fallback list.
-- Deployed Web App API version 10 (`AKfycbztHgayzNDNU8GZ06TSul0imJYN7AkNcpWQM9yvk9OulIg63nZNK6YwXQniXY6evqA`) and updated `app.js`.
+- Added Gemini 3.6 Flash to top of model list.
+- Deployed Web App API version 10 to Google Script.
 
 ## [2.6.0] - 2026-07-24
 
 ### Added
-- Updated Gemini API endpoint to `gemini-2.5-flash` with multi-model fallback array (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-latest`, `gemini-2.5-pro`).
-- Deployed Web App API version 9 (`AKfycbxRKsmoTiif0X28zJwgCCEmX0yJvKc00ag4up7QSFAxcttgODBLiKSxn99NY6jpkpo`) and updated `app.js`.
+- Updated Gemini API endpoint with multi-model fallback array.
+- Deployed Web App API version 9 to Google Script.
 
 ## [2.5.0] - 2026-07-24
 
 ### Added
-- Removed old `AIzaSy...` placeholder text in `index.html`.
-- Confirmed zero prefix checks remain in Google Apps Script backend.
-- Deployed Web App API version 8 (`AKfycbwuDt79g5lJ_ulv8SNo1NAV-UrdhKXh5JgbQF9CnP8crcdzZ3CtdTJdUTsOud2Ia24`) and pushed to GitHub.
+- Removed obsolete placeholder text in dashboard interface.
+- Deployed Web App API version 8 to Google Script.
 
 ## [2.4.0] - 2026-07-24
 
 ### Added
-- Removed key prefix restrictions to fully support new `AQ.Ab8...` API keys issued by Google AI Studio.
-- Deployed Web App API version 7 (`AKfycbwe6qn00_r9hwuBphqcUGHS7eJw2yHdpifMPAzU5smv-Q6-7MhzpZN_h6NPNJPSSZ4`) and updated `app.js`.
+- Removed key prefix restrictions for modern API key formats.
+- Deployed Web App API version 7 to Google Script.
 
 ## [2.3.0] - 2026-07-24
 
 ### Added
-- Added API key format check (`AIzaSy...`) in `generateUniqueFactWithGemini` in Apps Script backend.
-- Friendly HTTP 400 error message parser for invalid API key format.
-- Deployed Web App API version 6 (`AKfycbwYOzHHginojRwC_hV18w9xw7eRWIAqes8P8dfkiqiezh4grX9i5RsvJb7W5HFso-0`) and updated `app.js`.
+- Added API key format check in backend generator.
+- Added friendly error message parser for invalid keys.
+- Deployed Web App API version 6 to Google Script.
 
 ## [2.2.0] - 2026-07-24
 
 ### Added
-- Added interactive UI alerts (`SpreadsheetApp.getUi().alert`) for Google Sheet trigger execution feedback.
-- If `GEMINI_API_KEY` is missing in the `Settings` tab, a clear alert dialog pops up guiding the user.
-- Deployed Web App API version 5 (`AKfycbzIvzN7ofkDqjZuFrqDhnLPkn4YeXVxjIaU1xXv7c1WqMjOm2SM8AruZsFjRLDzlvs`) and updated `app.js`.
+- Added interactive UI alerts for sheet trigger feedback.
+- Added alert dialog when Gemini API key is missing.
+- Deployed Web App API version 5 to Google Script.
 
 ## [2.1.0] - 2026-07-24
 
 ### Added
-- Integrated official Google Tasks API (`postToGoogleTasks`) into Apps Script backend.
-- Automatically inserts new daily fun facts as items directly into your Google Tasks app under the `FunFacts` task list.
-- Deployed Web App API version 4 (`AKfycbwLmzNZh3QusKH7CSrPam2rWB0yw6ueNa-qb44dqLA7MqJOquNfcK9169e93Cb9HYs`) and updated `app.js`.
+- Integrated official Google Tasks API into script backend.
+- Automatically added new daily fun facts to task list.
+- Deployed Web App API version 4 to Google Script.
 
 ## [2.0.0] - 2026-07-24
 
 ### Added
-- Added custom `🎯 Fun Fact Tracker` UI Menu to Google Sheet backend (`onOpen`).
-- Pushed and deployed Web App version 3 (`AKfycbwx0lJhefg9gCbkED9nm3yXaH_VhL9wZUrSHrnyTjnuMIxSxluQB-mgKnV657NvUbE`).
-- Updated frontend default `scriptUrl` in `app.js` and pushed to GitHub.
+- Added custom Fun Fact Tracker menu in Google Sheets.
+- Deployed Web App API version 3 to Google Script.
+- Updated default frontend script URL in web app.
 
 ## [1.9.0] - 2026-07-24
 
 ### Added
-- Re-bound clasp and Apps Script backend directly to `FunFacts Database` Google Sheet (`1naLVsXZooix4UnigoHa11OcGve7uM-TFOvE-FpW5YY4`).
-- Deployed Web App API endpoint (`AKfycbw27-96F0el1H0DeLyGDQasZO_vD6fPw3rXhW5b9sMQBa8s1FTYwg8CbYY5nbpNiHo`).
-- Connected frontend `app.js` default `scriptUrl` setting to `FunFacts Database` Web App API endpoint URL.
+- Re-bound clasp backend to FunFacts Database Google Sheet.
+- Deployed updated Web App API endpoint to Google Script.
+- Connected dashboard default script URL to sheet backend.
 
 ## [1.8.0] - 2026-07-24
 
 ### Added
-- Bound Apps Script backend directly to user's Google Sheet (`1vcgnSBPjq2tvgfdPACIHgdB7EfnZbBd5qcMoq9Ygx-k`).
-- Deployed Web App API endpoint (`AKfycbyXB0lJa6apsJ99DAvtT0TPLDYXvPILmAJEiFxCqe5mdsGChYMSbAqEGY5aZXNeMRMs`).
-- Connected frontend `app.js` default `scriptUrl` setting directly to user's Google Sheet Web App API endpoint URL.
+- Bound Apps Script backend directly to user Google Sheet.
+- Deployed updated Web App API endpoint to Google Script.
+- Connected dashboard script setting to live sheet backend.
 
 ## [1.7.0] - 2026-07-24
 
 ### Added
-- Created dedicated Google Sheet titled `FunFacts Database` and attached Google Apps Script backend project using `clasp create`.
-- Deployed Web App version 1 (`AKfycbyxhsxLZc5RMy6C6tRoYAEszmjGeF7OA-35DMnxUlyyf2UCiHBOcQP8UMx1OXnD5dU`).
-- Connected frontend `app.js` default `scriptUrl` setting directly to the new `FunFacts Database` Web App API endpoint URL.
+- Created dedicated Google Sheet titled FunFacts Database.
+- Deployed Web App version 1 to Google Script.
+- Connected dashboard script setting to new web app endpoint.
 
 ## [1.6.0] - 2026-07-24
 
 ### Added
-- Proactively pushed and integrated Fun Fact Tracker module (`FunFactTracker.js`) directly into Google Apps Script backend using `clasp`.
-- Embedded `🎯 Fun Fact Tracker` options directly into Google Sheets Admin Menu (`dailyMidnightFunFactTrigger`, `setupFunFactMidnightTrigger`, `initFunFactSheet`).
+- Pushed Fun Fact Tracker module to Google Apps Script.
+- Embedded tracker options into Google Sheets admin menu.
 
 ## [1.5.1] - 2026-07-24
 
 ### Added
-- Added `.nojekyll` file to ensure GitHub Pages bypasses Jekyll build step and renders static site instantly.
-- Added step-by-step GitHub Pages setup instructions.
+- Added nojekyll file to bypass Jekyll GitHub build.
+- Added step-by-step setup instructions for GitHub Pages.
 
 ## [1.5.0] - 2026-07-24
 
 ### Added
-- Configured GitHub Pages live web app deployment (`https://briandivacox.github.io/funfacts/`).
-- Added `README.md` with live demo badge, feature overview, and getting started instructions.
+- Configured GitHub Pages live web app deployment.
+- Added project README with demo badge and documentation.
 
 ## [1.4.1] - 2026-07-24
 
 ### Added
-- Connected remote repository `https://github.com/BrianDivaCox/funfacts.git`.
-- Pushed complete Fun Fact Tracker codebase (v1.4.1) to GitHub main branch.
+- Connected remote repository on GitHub for project sync.
+- Pushed complete initial codebase to GitHub main branch.
 
 ## [1.4.0] - 2026-07-24
 
 ### Added
-- Initialized local Git repository with `.gitignore` rules.
-- Prepared project for GitHub publishing and remote tracking.
+- Initialized local Git repository with gitignore rules.
+- Prepared project for GitHub publishing and tracking.
 
 ## [1.3.1] - 2026-07-24
 
 ### Fixed
-- Fixed localStorage caching issue where browser displayed only 5 initial facts instead of all 64 seeded facts.
-- Added automatic migration and "Reset Vault Data" button to ensure browser localStorage always syncs with the full 64 historical facts dataset.
+- Fixed browser local storage cache sync for seeded facts.
+- Added vault reset button to sync historical facts.
 
 ## [1.3.0] - 2026-07-24
 
 ### Added
-- Imported and indexed all 64 real historical fun facts from user's Google Keep `FunFacts` list.
-- Configured database seeding in `app.js` and `backend/Code.gs` with full historical dataset.
-- Ran duplicate audit over existing 64 facts, identifying historical repetitions (Venus rotation, Wombat poop, Sea turtle tears, Honey shelf-life, Flamingo diets) and flagging them in the vault.
+- Imported and indexed 64 historical Google Keep facts.
+- Configured initial database seeding with historical dataset.
+- Flagged historical duplicate entries across the initial dataset.
 
 ## [1.2.0] - 2026-07-24
 
 ### Added
-- Updated Gemini generation prompt to enforce strictly < 180 characters, simple & fun tone, social media formatting, and emojis.
-- Configured `#funfact` hashtag formatting across all generated outputs.
-- Enhanced Google Keep note formatting to target the `FunFacts` list and prepare facts for Google Tasks integration.
+- Enforced concise character limits and fun tone in prompts.
+- Configured funfact hashtag formatting across all generated outputs.
+- Enhanced Keep note formatting for Google Tasks sync.
 
 ## [1.1.0] - 2026-07-24
 
 ### Added
-- Created `start_dashboard.bat` script to run the local web server and open the dashboard in the browser automatically.
-- Created `backup_folder.bat` script to archive/zip files from the project folder on demand.
-- Created `organize_files.bat` script to sort and move files from any target folder into organized subdirectories.
+- Created dashboard startup script to launch browser app.
+- Created backup script to archive project files on demand.
+- Created organize script to sort files into subdirectories.
 
 ## [1.0.0] - 2026-07-24
 
 ### Added
-- Initial project release.
-- Web Dashboard interface for managing, searching, and previewing fun facts.
-- Multi-tier Duplicate Prevention Engine (exact string, normalized Levenshtein distance, Jaccard keyword overlap ratio).
-- Google Apps Script backend engine with Google Sheet storage and Google Keep integration.
-- Midnight automated trigger support and on-demand Gemini generation sandbox.
+- Initial project release of Fun Fact Tracker application.
+- Added web dashboard for managing and searching facts.
+- Added multi-tier duplicate prevention engine for fact uniqueness.
+- Added Google Apps Script backend with sheet storage.
+- Added automated midnight trigger and Gemini generation sandbox.
