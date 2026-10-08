@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.4.0] - 2026-10-08
+
+### Upgraded
+- Upgraded primary AI model to Gemini 3.8 Flash.
+- Retired legacy Gemini 3.6 and 3.7 endpoints across project.
+- Updated fallback chain across web app and automation scripts.
+
 ## [5.3.0] - 2026-10-05
 
 ### Added & Optimized

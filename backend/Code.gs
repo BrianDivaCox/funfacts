@@ -1014,7 +1014,7 @@ function generateUniqueFactWithGemini(providedApiKey) {
   ];
 
   const modelsToTry = [
-    "gemini-3.6-flash",      // Primary: latest flagship flash model
+    "gemini-3.8-flash",      // Primary: latest flagship flash model
     "gemini-3.5-flash",      // Fallback 1: stable high-performance flash
     "gemini-3.5-flash-lite", // Fallback 2: fast, low-cost flash
     "gemini-3.1-pro"         // Fallback 3: pro model (last resort)

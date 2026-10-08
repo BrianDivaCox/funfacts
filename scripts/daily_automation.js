@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz3xoluxnUKILHmLs2R8atUEYC8j3eegupqn_9Kd65usCwHVZqnvorqd-m5ipyBhFM/exec";
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxkukGIPi_ynel8GOiQuvMogTGmlbCt7S0AnqPtNn-QGjhT2Jg0T3FAclVFhOc8rpY/exec";
 
 const TOPIC_AREAS = [
   "Deep Ocean Biology & Bioluminescence",
@@ -51,7 +51,7 @@ const TOPIC_AREAS = [
 ];
 
 const MODELS_TO_TRY = [
-  "gemini-3.6-flash",
+  "gemini-3.8-flash",
   "gemini-3.5-flash",
   "gemini-3.5-flash-lite",
   "gemini-3.1-pro"
