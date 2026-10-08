@@ -1842,10 +1842,7 @@ function postToGoogleKeep(factText, category) {
     cleanFact += " #funfact";
   }
 
-  // 1. Automatically push to Google Tasks App!
-  const taskResult = postToGoogleTasks(cleanFact, catToUse);
-
-  // 2. Format note content for Keep / Mail backup
+  // 1. Format note content for Keep / Mail backup
   const formattedNoteContent = 
     `📌 FunFacts List - ${dateStr}\n` +
     `${cleanFact}`;
@@ -1863,7 +1860,6 @@ function postToGoogleKeep(factText, category) {
     success: true,
     noteTitle: "FunFacts",
     noteContent: formattedNoteContent,
-    taskCreated: taskResult.success,
     keepNoteId: "KEEP-" + Date.now()
   };
 }

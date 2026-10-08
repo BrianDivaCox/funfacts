@@ -1,34 +1,29 @@
-# Implementation Plan: Gemini Flash 3.8 Model Upgrade (v5.4.0)
+# Implementation Plan: Eliminate Duplicate Google Tasks Insertion (v5.4.1)
 
-Upgrade AI model integration across the entire codebase from retiring 3.6/3.7 models to `gemini-3.8-flash`.
+Single-source Google Tasks creation exclusively through `saveFactToSheet()`, preventing multiple duplicate tasks from being created when a fun fact is generated.
 
 ## Proposed Changes
 
-### 1. Frontend Client (`app.js`)
-- Update `modelsToTry` array in `runGeminiGenerator`:
-  - Primary: `gemini-3.8-flash`
-  - Fallbacks: `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`
+### 1. Google Apps Script Backend (`backend/Code.gs`)
+- Modify `postToGoogleKeep(factText, category)`:
+  - Remove redundant `postToGoogleTasks()` call.
+  - Keep email draft/formatting responsibility only.
+- In `dailyMidnightTrigger()`:
+  - Remove duplicate tasks creation flow: `uniqueFact` will get pushed to Tasks once inside `saveFactToSheet(uniqueFact)`.
+  - Maintain `syncMissingFactsToGoogleTasks()` as catch-up only, which checks for `GTASK-` prefix and avoids re-posting already synced facts.
+- Review `saveFactToSheet()`:
+  - Ensure Column H is immediately populated with `GTASK-` prefix upon successful insertion, guaranteeing idempotency.
 
-### 2. Google Apps Script Backend (`backend/Code.gs`)
-- Update `modelsToTry` array in `generateUniqueFactWithGemini`:
-  - Primary: `gemini-3.8-flash`
-  - Fallbacks: `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`
+### 2. Version Bump & Changelog
+- Bump version to `5.4.1` in `package.json`.
+- Add `v5.4.1` entry in `CHANGELOG.md` following the strict $\le$ 10 words per bullet rule.
 
-### 3. Automation Scripts (`scripts/daily_automation.js`)
-- Update `MODELS_TO_TRY` array:
-  - Primary: `gemini-3.8-flash`
-  - Fallbacks: `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-pro`
+### 3. Deploy via Clasp & Sync Web App URL
+- Push with `clasp push`.
+- Deploy version 34 with `clasp deploy`.
+- Sync new Web App URL across `app.js`, `daily_automation.js`, and `.github/workflows/daily_automation.yml`.
 
-### 4. Version Bump & Changelog
-- Bump version to `5.4.0` in `package.json`.
-- Add `v5.4.0` release notes to `CHANGELOG.md` following the strict $\le$ 10 words per bullet rule.
-
-### 5. Clasp Deployment & Automated Verification
-- Push and deploy Apps Script via clasp.
-- Programmatically verify test suites and headless checks.
+### 4. Verification & Git Commit
+- Run automated node syntax checks and unit tests.
+- Audit `CHANGELOG.md` for word count limit ($\le 10$ words).
 - Commit and push to GitHub.
-
-## Verification Plan
-- Automated syntax and unit verification of scripts.
-- Check word count of all bullets in `CHANGELOG.md` ($\le 10$ words).
-- Deploy Apps Script backend via `clasp push` and `clasp deploy`.

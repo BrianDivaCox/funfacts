@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.4.1] - 2026-10-08
+
+### Fixed
+- Fixed duplicate Google Tasks creation bug on fact generation.
+- Removed redundant task insertion from Google Keep helper function.
+- Centralized task creation exclusively in sheet saving pipeline.
+
 ## [5.4.0] - 2026-10-08
 
 ### Upgraded
