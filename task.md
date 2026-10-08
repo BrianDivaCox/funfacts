@@ -7,5 +7,5 @@
 - [x] Add v5.4.1 section to `CHANGELOG.md` with strict <= 10 words per bullet <!-- id: 4 -->
 - [x] Deploy backend to Google Apps Script via clasp push & deploy, and sync API URL <!-- id: 5 -->
 - [x] Run automated verification tests across all modified files and word count audits <!-- id: 6 -->
-- [ ] Commit and push to GitHub with standard versioned title and Mini Summary <!-- id: 7 -->
-- [ ] Clean up background tasks and provide detailed summary to user <!-- id: 8 -->
+- [x] Commit and push to GitHub with standard versioned title and Mini Summary <!-- id: 7 -->
+- [x] Clean up background tasks and provide detailed summary to user <!-- id: 8 -->
