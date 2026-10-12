@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzDd3KeMjJgzLI-2ef4vOfZygxQTWimmjnmQBrdIPch6cind_cDuvs_-pR28u02aWY/exec";
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwPfsmZjpzKlt56qZ-2dFf_ClCYBk-AVluoDZSlb50W53OxK80S0_LsZGAcyi9ZlH4/exec";
 
 const TOPIC_AREAS = [
   "Deep Ocean Biology & Bioluminescence",
@@ -54,7 +54,7 @@ const MODELS_TO_TRY = [
   "gemini-3.8-flash",
   "gemini-3.5-flash",
   "gemini-3.5-flash-lite",
-  "gemini-3.1-pro"
+  "gemini-flash-lite-latest"
 ];
 
 // Helper: Normalize text with number normalization
@@ -349,11 +349,16 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
       };
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout per call
+
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         const status = response.status;
         const resText = await response.text();
@@ -406,17 +411,24 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
               console.log(`  ⚠️ Duplicate detected (score ${dupCheck.similarityScore}). Retrying...`);
             }
           }
+        } else if (status === 503) {
+          lastErrorDetail = `HTTP 503: Model ${modelName} experiencing high demand`;
+          console.log(`  ❌ ${modelName} returned 503 (high demand). Advancing immediately to next fallback model...`);
+          break; // Stop retrying the overloaded model and advance immediately to fallback model!
         } else {
           lastErrorDetail = `HTTP ${status}: ${resText.substring(0, 150)}`;
           console.log(`  ❌ ${modelName} returned ${status}`);
-          if (status === 503 || status === 429) {
+          if (status === 429) {
             await new Promise(res => setTimeout(res, 2000));
           } else {
             break; // Move to next model for hard errors
           }
         }
       } catch (err) {
-        console.log(`  ❌ Fetch error: ${err.message}`);
+        console.log(`  ❌ Fetch error on ${modelName}: ${err.name === 'AbortError' ? 'Request timed out after 15s' : err.message}`);
+        if (err.name === 'AbortError') {
+          break; // Advance to next model on timeout
+        }
       }
     }
 

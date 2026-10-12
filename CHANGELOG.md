@@ -2,6 +2,13 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.5.0] - 2026-10-12
+
+### Fixed & Enhanced
+- Added instant fallback on 503 high demand API responses.
+- Replaced retired pro model with verified flash lite endpoint.
+- Added fifteen-second request timeout to prevent hanging workflow runs.
+
 ## [5.4.1] - 2026-10-08
 
 ### Fixed
