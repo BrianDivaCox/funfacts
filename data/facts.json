@@ -2434,5 +2434,22 @@
     "similarityScore": 0.333,
     "status": "Posted",
     "keepNoteId": "GTASK-VEhCc3RlbFRtTjMzc2hfRQ"
+  },
+  {
+    "id": "FACT-1785870035034",
+    "date": "2026-10-05T21:57:41.139Z",
+    "factText": "🦥 Sloths can hold their breath for 40 minutes underwater! 🌊 #funfact",
+    "category": "Animals",
+    "keywords": [
+      "sloth",
+      "hold",
+      "breath",
+      "underwat"
+    ],
+    "similarityScore": 1,
+    "status": "Duplicate (Flagged)",
+    "repeatCount": 9,
+    "keepNoteId": "",
+    "source": "Google Tasks Test"
   }
 ]

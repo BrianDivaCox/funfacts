@@ -2330,10 +2330,16 @@ class FactVaultApp {
       .map(k => `<span class="tag">#${k}</span>`)
       .join("");
 
+    const repeatCountVal = fact.repeatCount ? (typeof fact.repeatCount === "number" ? fact.repeatCount : parseInt(String(fact.repeatCount).replace(/[^\d]/g, ""))) : 0;
+    const repeatBadgeHtml = repeatCountVal > 1 
+      ? `<span class="badge" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); font-weight: bold;">🔁 ${repeatCountVal}x Repeated</span>`
+      : "";
+
     card.innerHTML = `
       <div class="fact-meta">
         <span class="badge badge-cat">${fact.category || "General"}</span>
         <span class="badge badge-status">${fact.status || "Posted"}</span>
+        ${repeatBadgeHtml}
       </div>
       <div class="fact-date">📅 ${dateFormatted} • ${fact.source || "Gemini"}</div>
       <div class="fact-text">"${fact.factText}"</div>

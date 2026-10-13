@@ -2,6 +2,16 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.8.0] - 2026-10-13
+
+### Fixed & Enhanced
+- Consolidated Duplicates Archive into single entries per topic.
+- Added incrementing repeat counter for recurring duplicate facts.
+- Prevented redundant duplicate rows from cluttering the archive sheet.
+- Updated archive consolidation engine to accurately cluster repeats.
+- Added visual repeat counter pills to web dashboard.
+- Supported duplicate filter and repeat counts in local database.
+
 ## [5.7.0] - 2026-10-13
 
 ### Fixed & Enhanced

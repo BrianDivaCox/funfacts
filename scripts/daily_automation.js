@@ -308,6 +308,7 @@ async function runAutomation() {
                 keywords: extractKeywords(af.factText),
                 similarityScore: af.score || 1.0,
                 status: "Duplicate (Flagged)",
+                repeatCount: af.repeatCount || 1,
                 keepNoteId: "",
                 source: af.source || "Duplicates Archive"
               });

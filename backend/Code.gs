@@ -26,7 +26,7 @@ function onOpen() {
 
   const toolsMenu = ui.createMenu("⚙️ Settings & Tools")
     .addItem("📦 Move Duplicates to Archive", "moveDuplicatesToArchive")
-    .addItem("🔢 Regroup & Count Duplicates Archive", "regroupDuplicatesArchive")
+    .addItem("📦 Consolidate & Count Duplicates Archive", "consolidateDuplicatesArchive")
     .addItem("Format Sheet Theme", "formatSheetArtistically")
     .addItem("Setup 12:00 AM Auto-Pilot", "setupMidnightTrigger")
     .addItem("Initialize / Reset Sheet", "initSpreadsheet");
@@ -97,14 +97,14 @@ function initSpreadsheet() {
     dupSheet = ss.insertSheet(DUPLICATES_SHEET);
   }
   const dupHeaders = [
-    "Duplicate ID",
-    "Date Archived",
+    "Topic ID",
+    "Last Repeated Date",
     "Fact Text",
     "Category",
     "Matched Original ID",
     "Matched Original Fact Text",
     "Similarity Score",
-    "Repeat #",
+    "Repeat Count",
     "Source"
   ];
   dupSheet.getRange(1, 1, 1, dupHeaders.length).setValues([dupHeaders]);
@@ -245,12 +245,68 @@ function reScanAllDuplicates() {
  * Groups repeats by master topic and labels them with repeat counters (e.g. 'Repeat #1', 'Repeat #2').
  * Keeps 'Fact Log' 100% compact and clutter-free!
  * Run from: 🎯 Fun Fact Tracker > 📦 Move Duplicates to Archive
+/**
+ * Records or increments a duplicate occurrence in Duplicates Archive.
+ * If topic exists, increments Repeat Count in place without creating a new row.
+ * If topic does not exist, appends a single row with Repeat Count = 1.
+ */
+function recordDuplicateOccurrence(factText, category, source) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  initSpreadsheet();
+  let dupSheet = ss.getSheetByName(DUPLICATES_SHEET);
+  const lastRow = dupSheet.getLastRow();
+  const cleanTarget = normalizeText(factText);
+
+  let matchRow = -1;
+  let currentCount = 0;
+
+  if (lastRow >= 2) {
+    const data = dupSheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const archText = String(data[i][2] || "");
+      const cleanArch = normalizeText(archText);
+      if (cleanArch === cleanTarget || calculateLevenshteinSimilarity(cleanTarget, cleanArch) >= 0.70) {
+        matchRow = i + 2;
+        currentCount = parseInt(String(data[i][7]).replace(/[^\d]/g, "")) || 1;
+        break;
+      }
+    }
+  }
+
+  if (matchRow !== -1) {
+    const newCount = currentCount + 1;
+    dupSheet.getRange(matchRow, 8).setValue(newCount);
+    dupSheet.getRange(matchRow, 2).setValue(new Date().toISOString());
+    if (source) dupSheet.getRange(matchRow, 9).setValue(source);
+    SpreadsheetApp.flush();
+    return { success: true, action: "incremented", row: matchRow, repeatCount: newCount };
+  } else {
+    const newId = "DUP-" + Date.now();
+    const newRow = [
+      newId,
+      new Date().toISOString(),
+      factText,
+      category || "General",
+      newId,
+      factText,
+      1.0,
+      1,
+      source || "Duplicate Engine"
+    ];
+    dupSheet.appendRow(newRow);
+    SpreadsheetApp.flush();
+    return { success: true, action: "created", row: dupSheet.getLastRow(), repeatCount: 1 };
+  }
+}
+
+/**
+ * Move Duplicates from Fact Log to Duplicates Archive.
+ * Consolidates into single rows and increments repeat counts instead of duplicating rows.
  */
 function moveDuplicatesToArchive() {
-  const ui = SpreadsheetApp.getUi();
+  let ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch (e) {}
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Ensure Duplicates Archive tab exists
   initSpreadsheet();
   
   const factSheet = ss.getSheetByName(SHEET_NAME);
@@ -264,83 +320,27 @@ function moveDuplicatesToArchive() {
   const lastRow = factSheet.getLastRow();
   const data = factSheet.getRange(2, 1, lastRow - 1, 9).getValues();
 
-  // Read existing repeats in Duplicates Archive to maintain sequential counters
-  const repeatCountsByOriginalId = {};
-  if (dupSheet && dupSheet.getLastRow() >= 2) {
-    const existingArchiveData = dupSheet.getRange(2, 1, dupSheet.getLastRow() - 1, 9).getValues();
-    for (let r = 0; r < existingArchiveData.length; r++) {
-      const origId = String(existingArchiveData[r][4] || ""); // Col E: Matched Original ID
-      if (origId) {
-        repeatCountsByOriginalId[origId] = (repeatCountsByOriginalId[origId] || 0) + 1;
-      }
-    }
-  }
-
-  // Build list of unique non-duplicate facts to identify what duplicate rows matched against
-  const uniqueFacts = [];
-  const rowsToMove = [];
   const rowIndicesToDelete = [];
+  let movedCount = 0;
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    const status = String(row[6] || "").toLowerCase(); // Col G: Status
-    const factText = row[2];
+    const status = String(row[6] || "").toLowerCase();
+    const factText = String(row[2] || "");
 
     if (status.includes("duplicate")) {
-      // Find what original unique fact this matches
-      let matchedOrig = null;
-      let highestScore = typeof row[5] === "number" ? row[5] : 0;
-
-      if (uniqueFacts.length > 0) {
-        const matchRes = checkDuplicate(factText, uniqueFacts);
-        if (matchRes.highestMatch) {
-          matchedOrig = matchRes.highestMatch;
-          highestScore = matchRes.similarityScore;
-        }
-      }
-
-      const origId = matchedOrig ? (matchedOrig.id || "ORIGINAL") : "UNKNOWN";
-      const origText = matchedOrig ? matchedOrig.factText : "";
-
-      // Calculate repeat counter for this matched original topic
-      repeatCountsByOriginalId[origId] = (repeatCountsByOriginalId[origId] || 0) + 1;
-      const repeatNumber = `Repeat #${repeatCountsByOriginalId[origId]}`;
-
-      const archiveRow = [
-        row[0],                                    // Duplicate ID
-        new Date().toISOString(),                  // Date Archived
-        row[2],                                    // Fact Text
-        row[3] || "General",                       // Category
-        origId,                                    // Matched Original ID
-        origText,                                  // Matched Original Fact Text
-        highestScore,                              // Similarity Score
-        repeatNumber,                              // Repeat # (e.g. Repeat #1, Repeat #2)
-        row[8] || "Archived from Fact Log"         // Source
-      ];
-
-      rowsToMove.push(archiveRow);
-      rowIndicesToDelete.push(i + 2); // 1-indexed row number in sheet
-    } else {
-      uniqueFacts.push({
-        id: String(row[0] || ""),
-        factText: factText,
-        category: row[3] || "General",
-        keywords: String(row[4] || "").split(",").map(k => k.trim())
-      });
+      recordDuplicateOccurrence(factText, row[3] || "General", row[8] || "Archived from Fact Log");
+      rowIndicesToDelete.push(i + 2);
+      movedCount++;
     }
   }
 
-  if (rowsToMove.length === 0) {
+  if (rowIndicesToDelete.length === 0) {
     const noDupMsg = "✨ Great news! There are currently no duplicate facts in Fact Log.\n\nAll rows in Fact Log are unique!";
     if (ui) ui.alert("📦 Move Duplicates to Archive", noDupMsg, ui.ButtonSet.OK);
     return { success: true, moved: 0 };
   }
 
-  // 1. Append rows to Duplicates Archive
-  const dupStartRow = dupSheet.getLastRow() + 1;
-  dupSheet.getRange(dupStartRow, 1, rowsToMove.length, 9).setValues(rowsToMove);
-
-  // 2. Delete rows from Fact Log from bottom up to avoid index shifts
   for (let d = rowIndicesToDelete.length - 1; d >= 0; d--) {
     factSheet.deleteRow(rowIndicesToDelete[d]);
   }
@@ -348,19 +348,15 @@ function moveDuplicatesToArchive() {
   SpreadsheetApp.flush();
   formatSheetArtistically();
 
-  const successMsg = `📦 Duplicates Successfully Archived!\n\n` +
-    `• Duplicates moved: ${rowsToMove.length}\n` +
-    `• Fact Log rows remaining: ${factSheet.getLastRow() - 1} (100% unique & clean)\n` +
-    `• Duplicates Archive tab total: ${dupSheet.getLastRow() - 1}\n\n` +
-    `Repeats are grouped and numbered (#1, #2, #3...) next to their matched master topic!`;
+  const successMsg = `📦 Duplicates Archived!\n\n• Processed: ${movedCount} duplicate(s)\n• Duplicates Archive has single entries with live repeat counts.\n• Zero duplicate rows remain in Fact Log.`;
   Logger.log(successMsg);
   if (ui) ui.alert("📦 Duplicates Archived", successMsg, ui.ButtonSet.OK);
 
-  return { success: true, moved: rowsToMove.length, remainingUnique: factSheet.getLastRow() - 1 };
+  return { success: true, moved: movedCount, remainingUnique: factSheet.getLastRow() - 1 };
 }
 
 /**
- * Fetch all rows from Duplicates Archive tab
+ * Fetch all rows from Duplicates Archive tab (consolidated single entries)
  */
 function getDuplicatesArchive() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -374,18 +370,17 @@ function getDuplicatesArchive() {
     category: String(r[3] || "General"),
     matchedOrigId: String(r[4] || ""),
     matchedOrigText: String(r[5] || ""),
-    score: parseFloat(r[6]) || 0,
-    repeatCount: String(r[7] || "Repeat #1"),
+    score: parseFloat(r[6]) || 1.0,
+    repeatCount: parseInt(String(r[7]).replace(/[^\d]/g, "")) || 1,
     source: String(r[8] || "Archived Duplicate")
   }));
 }
 
 /**
- * Regroups and counts all duplicates in the Duplicates Archive tab so that
- * repeat occurrences of the same topic (e.g. Sloth breath, Venus year, Octopuses)
- * are organized together row-by-row and numbered sequentially (#1, #2, #3...).
+ * Consolidates all repeated facts in Duplicates Archive so that each distinct topic
+ * has EXACTLY ONE row with an incrementing Repeat Count.
  */
-function regroupDuplicatesArchive() {
+function consolidateDuplicatesArchive() {
   let ui = null;
   try { ui = SpreadsheetApp.getUi(); } catch (e) {}
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -399,113 +394,113 @@ function regroupDuplicatesArchive() {
 
   const lastRow = dupSheet.getLastRow();
   const archiveData = dupSheet.getRange(2, 1, lastRow - 1, 9).getValues();
-  const uniqueFacts = getAllFacts();
-
-  const clusters = []; // Array of { masterId, masterText, category, items: [] }
+  const clusters = []; // Array of { masterId, masterText, category, latestDate, latestSource, totalRepeats }
 
   for (let i = 0; i < archiveData.length; i++) {
     const row = archiveData[i];
     const factText = String(row[2] || "");
     const origId = String(row[4] || "");
     const category = String(row[3] || "General");
+    const dateStr = row[1] instanceof Date ? row[1].toISOString() : String(row[1] || new Date().toISOString());
+    const sourceStr = String(row[8] || "Archived Duplicate");
+    
+    // Invert any triangular number sum from legacy ordinal summing (e.g. 1+2+...+8 = 36 -> 8)
+    const unTriangular = function(s) {
+      const n = (Math.sqrt(8 * s + 1) - 1) / 2;
+      return (Number.isInteger(n) && n > 0) ? n : s;
+    };
+
+    let itemRepeats = 1;
+    if (typeof row[7] === "number") {
+      itemRepeats = unTriangular(row[7]);
+    } else {
+      const match = String(row[7] || "").match(/Repeat\s*#\s*(\d+)/i);
+      if (match) {
+        itemRepeats = 1;
+      } else {
+        const parsed = parseInt(String(row[7] || "").replace(/[^\d]/g, ""));
+        itemRepeats = parsed > 0 ? unTriangular(parsed) : 1;
+      }
+    }
 
     let matchedCluster = null;
-    let matchScore = 0;
 
-    // 1. Check if matches an existing cluster already built
+    // 1. Check exact match or high similarity in existing clusters
+    const cleanTarget = normalizeText(factText);
     for (let c = 0; c < clusters.length; c++) {
       const cl = clusters[c];
+      const cleanCl = normalizeText(cl.masterText);
+      if (cleanCl === cleanTarget) {
+        matchedCluster = cl;
+        break;
+      }
       if (cl.masterId && origId && cl.masterId === origId) {
         matchedCluster = cl;
-        matchScore = 1.0;
         break;
       }
-      const sim = checkDuplicate(factText, [{ factText: cl.masterText, category: cl.category, keywords: extractKeywords(cl.masterText) }]);
-      if (sim.isDuplicate) {
+      const sim = calculateLevenshteinSimilarity(cleanTarget, cleanCl);
+      if (sim >= 0.70) {
         matchedCluster = cl;
-        matchScore = sim.similarityScore;
         break;
       }
     }
 
-    // 2. If not in clusters yet, check against Fact Log unique facts
-    if (!matchedCluster) {
-      const matchRes = checkDuplicate(factText, uniqueFacts);
-      if (matchRes.isDuplicate && matchRes.highestMatch) {
-        const m = matchRes.highestMatch;
-        matchedCluster = clusters.find(c => c.masterId === m.id);
-        if (!matchedCluster) {
-          matchedCluster = {
-            masterId: m.id,
-            masterText: m.factText,
-            category: m.category || category,
-            items: []
-          };
-          clusters.push(matchedCluster);
-        }
-        matchScore = matchRes.similarityScore;
+    if (matchedCluster) {
+      matchedCluster.totalRepeats += itemRepeats;
+      if (dateStr > matchedCluster.latestDate) {
+        matchedCluster.latestDate = dateStr;
       }
-    }
-
-    // 3. Fallback: Create new cluster for this distinct topic
-    if (!matchedCluster) {
-      matchedCluster = {
+      matchedCluster.latestSource = sourceStr;
+    } else {
+      clusters.push({
         masterId: row[0] || ("TOPIC-" + (clusters.length + 1)),
         masterText: factText,
         category: category,
-        items: []
-      };
-      clusters.push(matchedCluster);
-      matchScore = 1.0;
-    }
-
-    matchedCluster.items.push({
-      id: row[0],
-      dateArchived: row[1] || new Date().toISOString(),
-      factText: factText,
-      category: matchedCluster.category,
-      masterId: matchedCluster.masterId,
-      masterText: matchedCluster.masterText,
-      score: matchScore || row[6] || 1.0,
-      source: row[8] || "Archived Duplicate"
-    });
-  }
-
-  // Build sorted and numbered rows
-  const sortedRows = [];
-  for (let c = 0; c < clusters.length; c++) {
-    const cl = clusters[c];
-    for (let r = 0; r < cl.items.length; r++) {
-      const item = cl.items[r];
-      sortedRows.push([
-        item.id,
-        item.dateArchived,
-        item.factText,
-        item.category,
-        item.masterId,
-        item.masterText,
-        item.score,
-        `Repeat #${r + 1}`,
-        item.source
-      ]);
+        latestDate: dateStr,
+        latestSource: sourceStr,
+        totalRepeats: itemRepeats
+      });
     }
   }
+
+  // Sort consolidated entries by totalRepeats descending (highest repeats like Sloths at the top)
+  clusters.sort((a, b) => b.totalRepeats - a.totalRepeats);
+
+  const consolidatedRows = clusters.map(c => [
+    c.masterId,
+    c.latestDate,
+    c.masterText,
+    c.category,
+    c.masterId,
+    c.masterText,
+    1.0,
+    c.totalRepeats,
+    c.latestSource
+  ]);
 
   dupSheet.getRange(2, 1, lastRow - 1, 9).clearContent();
-  dupSheet.getRange(2, 1, sortedRows.length, 9).setValues(sortedRows);
+  dupSheet.getRange(2, 1, consolidatedRows.length, 9).setValues(consolidatedRows);
   SpreadsheetApp.flush();
   formatSheetArtistically();
 
-  const msg = `📦 Duplicates Archive Regrouped & Numbered!\n\n• Total duplicates: ${sortedRows.length}\n• Distinct topics clustered: ${clusters.length}\n\nRepeats (like Sloths, Octopuses, Venus) are now grouped row-by-row and numbered (#1, #2, #3...)!`;
+  const msg = `📦 Duplicates Archive Consolidated!\n\n` +
+    `• Reduced ${lastRow - 1} rows down to ${consolidatedRows.length} distinct single-entry topics!\n` +
+    `• Repeats (like Sloths) are now represented as ONE entry with live repeat counts.\n` +
+    `• Future duplicate posts will increment the counter in place.`;
   Logger.log(msg);
-  if (ui) ui.alert("📦 Archive Regrouped", msg, ui.ButtonSet.OK);
+  if (ui) ui.alert("📦 Archive Consolidated", msg, ui.ButtonSet.OK);
 
   return {
     success: true,
-    total: sortedRows.length,
-    clustersCount: clusters.length,
-    clusters: clusters.map(c => ({ id: c.masterId, text: c.masterText.substring(0, 50), repeats: c.items.length }))
+    totalOriginalRows: lastRow - 1,
+    consolidatedRowsCount: consolidatedRows.length,
+    clusters: clusters.map(c => ({ id: c.masterId, text: c.masterText.substring(0, 50), repeats: c.totalRepeats }))
   };
+}
+
+// Alias regroupDuplicatesArchive to consolidateDuplicatesArchive for backward compatibility
+function regroupDuplicatesArchive() {
+  return consolidateDuplicatesArchive();
 }
 
 /**
@@ -688,7 +683,7 @@ function formatSheetArtistically() {
       dupSheet.setColumnWidth(5, 150); // Matched Original ID
       dupSheet.setColumnWidth(6, 460); // Matched Original Text
       dupSheet.setColumnWidth(7, 120); // Similarity Score
-      dupSheet.setColumnWidth(8, 110); // Repeat #
+      dupSheet.setColumnWidth(8, 120); // Repeat Count
       dupSheet.setColumnWidth(9, 140); // Source
     } catch (e) {}
 
@@ -696,6 +691,7 @@ function formatSheetArtistically() {
     try {
       dupSheet.setRowHeight(1, 42);
       dupSheet.setFrozenRows(1);
+      dupSheet.getRange(1, 8).setValue("Repeat Count");
       const dHeader = dupSheet.getRange(1, 1, 1, dLastCol);
       dHeader
         .setBackground("#311042")               // Deep Amethyst Plum
@@ -846,6 +842,7 @@ function getAllFacts(includeArchive) {
           keywords: extractKeywords(String(dRow[2] || "")),
           similarityScore: parseFloat(dRow[6]) || 1.0,
           status: "Duplicate (Flagged)",
+          repeatCount: parseInt(String(dRow[7]).replace(/[^\d]/g, "")) || 1,
           keepNoteId: "",
           source: String(dRow[8] || "Duplicates Archive")
         });
@@ -1786,8 +1783,12 @@ function saveFactToSheet(factObj) {
   let similarityScore = finalDupCheck.similarityScore || 0;
   
   if (finalDupCheck.isDuplicate) {
+    try {
+      recordDuplicateOccurrence(factObj.factText, factObj.category, factObj.source || "Blocked Duplicate Post");
+    } catch (e) {}
+
     if (!factObj.force) {
-      throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}..."`);
+      throw new Error(`saveFactToSheet blocked duplicate post. Score: ${finalDupCheck.similarityScore}. Match: "${finalDupCheck.highestMatch ? finalDupCheck.highestMatch.factText.substring(0, 60) : 'unknown'}...". Repeat counter incremented in Duplicates Archive.`);
     } else {
       finalStatus = "Duplicate (Flagged)";
     }
@@ -2063,21 +2064,8 @@ function archiveSpecificFact(factId, factTextQuery) {
     deleteGoogleTaskById(keepNoteId.replace("GTASK-", ""));
   }
 
-  // 2. Append to Duplicates Archive
-  const archiveRow = [
-    rowData[0],                                              // Duplicate ID
-    new Date().toISOString(),                                // Date Archived
-    rowData[2],                                              // Fact Text
-    rowData[3] || "General",                                 // Category
-    "USER-FLAGGED",                                          // Matched Original ID
-    "Flagged by user as previously used fact",               // Matched Original Fact Text
-    1.0,                                                     // Similarity Score
-    "Repeat #1",                                             // Repeat #
-    rowData[8] || "User Archive Request"                     // Source
-  ];
-
-  const dupStartRow = dupSheet.getLastRow() + 1;
-  dupSheet.getRange(dupStartRow, 1, 1, 9).setValues([archiveRow]);
+  // 2. Record or increment in Duplicates Archive without creating redundant rows
+  const recordRes = recordDuplicateOccurrence(rowData[2], rowData[3] || "General", rowData[8] || "User Archive Request");
 
   // 3. Delete row from Fact Log
   factSheet.deleteRow(targetRowIndex);
@@ -2087,8 +2075,9 @@ function archiveSpecificFact(factId, factTextQuery) {
 
   return {
     success: true,
-    message: `Fact #${rowData[0]} moved to Duplicates Archive and removed from Google Tasks & Fact Log`,
-    archivedFact: rowData[2]
+    message: `Fact #${rowData[0]} moved to Duplicates Archive (Repeat Count: ${recordRes.repeatCount}) and removed from Google Tasks & Fact Log`,
+    archivedFact: rowData[2],
+    repeatCount: recordRes.repeatCount
   };
 }
 
@@ -2271,8 +2260,8 @@ function doGet(e) {
       responseData = dailyMidnightTrigger();
     } else if (action === "getArchive" || action === "getDuplicatesArchive") {
       responseData = { success: true, archive: getDuplicatesArchive() };
-    } else if (action === "regroupArchive" || action === "regroupDuplicatesArchive") {
-      responseData = regroupDuplicatesArchive();
+    } else if (action === "consolidateArchive" || action === "consolidateDuplicatesArchive" || action === "regroupArchive" || action === "regroupDuplicatesArchive") {
+      responseData = consolidateDuplicatesArchive();
     } else {
       responseData = { success: false, error: "Unknown GET action: " + action };
     }
@@ -2309,6 +2298,8 @@ function doPost(e) {
     } else if (action === "checkDuplicate") {
       const result = checkDuplicate(postData.factText);
       responseData = { success: true, duplicateReport: result };
+    } else if (action === "recordDuplicate" || action === "recordDuplicateOccurrence") {
+      responseData = recordDuplicateOccurrence(postData.factText, postData.category, postData.source);
     } else if (action === "addFact") {
       const dupCheck = checkDuplicate(postData.factText);
       if (dupCheck.isDuplicate && !postData.force) {
@@ -2338,8 +2329,8 @@ function doPost(e) {
       responseData = archiveSpecificFact(postData.id || postData.factId, postData.factText);
     } else if (action === "getArchive" || action === "getDuplicatesArchive") {
       responseData = { success: true, archive: getDuplicatesArchive() };
-    } else if (action === "regroupArchive" || action === "regroupDuplicatesArchive") {
-      responseData = regroupDuplicatesArchive();
+    } else if (action === "consolidateArchive" || action === "consolidateDuplicatesArchive" || action === "regroupArchive" || action === "regroupDuplicatesArchive") {
+      responseData = consolidateDuplicatesArchive();
     } else if (action === "deleteTask" || action === "deleteGoogleTask") {
       responseData = deleteGoogleTaskById(postData.taskId);
     } else if (action === "saveSetting") {
