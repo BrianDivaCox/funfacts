@@ -81,10 +81,8 @@ function buildKeywordIndex(facts) {
   const index = new Map();
   for (let i = 0; i < facts.length; i++) {
     const item = facts[i];
-    let kws = item.keywords;
-    if (!kws || !Array.isArray(kws) || kws.length === 0) {
-      kws = extractKeywords(item.factText);
-    }
+    const combinedText = `${item.factText || ""} ${Array.isArray(item.keywords) ? item.keywords.join(" ") : (item.keywords || "")}`;
+    const kws = extractKeywords(combinedText);
     for (const kw of kws) {
       if (!index.has(kw)) index.set(kw, []);
       index.get(kw).push(i);

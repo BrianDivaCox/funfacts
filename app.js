@@ -1921,6 +1921,19 @@ class FactVaultApp {
   }
 
   async syncFactsFromCloud() {
+    const mergeWithBaseline = (incomingList) => {
+      const merged = [...DEFAULT_SEED_FACTS];
+      const knownTexts = new Set(merged.map(f => this.normalizeText(f.factText)));
+      for (const f of incomingList) {
+        const norm = this.normalizeText(f.factText);
+        if (norm && !knownTexts.has(norm)) {
+          merged.push(f);
+          knownTexts.add(norm);
+        }
+      }
+      return merged;
+    };
+
     // 1. Try live Google Sheet Web App first
     if (this.settings.scriptUrl) {
       try {
@@ -1928,7 +1941,7 @@ class FactVaultApp {
         if (res.ok) {
           const data = await res.json();
           if (data && data.success && Array.isArray(data.facts) && data.facts.length > 0) {
-            this.facts = data.facts;
+            this.facts = mergeWithBaseline(data.facts);
             this.saveFacts();
             this.renderDashboard();
             this.renderFactLog();
@@ -1946,7 +1959,7 @@ class FactVaultApp {
       if (localRes.ok) {
         const localData = await localRes.json();
         if (Array.isArray(localData) && localData.length > 0) {
-          this.facts = localData;
+          this.facts = mergeWithBaseline(localData);
           this.saveFacts();
           this.renderDashboard();
           this.renderFactLog();
@@ -2060,10 +2073,8 @@ class FactVaultApp {
     const index = new Map();
     for (let i = 0; i < this.facts.length; i++) {
       const item = this.facts[i];
-      let kws = item.keywords;
-      if (!kws || !Array.isArray(kws) || kws.length === 0) {
-        kws = this.extractKeywords(item.factText || "");
-      }
+      const combinedText = `${item.factText || ""} ${Array.isArray(item.keywords) ? item.keywords.join(" ") : (item.keywords || "")}`;
+      const kws = this.extractKeywords(combinedText);
       for (let j = 0; j < kws.length; j++) {
         const kw = kws[j];
         if (!index.has(kw)) index.set(kw, []);
@@ -2174,6 +2185,12 @@ class FactVaultApp {
 
   // Event Listeners
   setupEventListeners() {
+    // Sync button in header
+    const syncBtn = document.getElementById("syncBtn");
+    if (syncBtn) {
+      syncBtn.addEventListener("click", () => this.syncFactsFromCloud());
+    }
+
     // Tab switching
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {

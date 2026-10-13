@@ -161,10 +161,8 @@ function buildKeywordIndex(facts) {
   for (let i = 0; i < facts.length; i++) {
     const item = facts[i];
     if (!item) continue;
-    let kws = item.keywords;
-    if (!kws || !Array.isArray(kws) || kws.length === 0) {
-      kws = extractKeywords(item.factText || "");
-    }
+    const combinedText = `${item.factText || ""} ${Array.isArray(item.keywords) ? item.keywords.join(" ") : (item.keywords || "")}`;
+    const kws = extractKeywords(combinedText);
     for (let j = 0; j < kws.length; j++) {
       const kw = kws[j];
       if (!index.has(kw)) index.set(kw, []);
