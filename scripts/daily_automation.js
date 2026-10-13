@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwPfsmZjpzKlt56qZ-2dFf_ClCYBk-AVluoDZSlb50W53OxK80S0_LsZGAcyi9ZlH4/exec";
+const DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-Lc7XbpxcslSgdAKCQS0IMZiQWm_nOs1Pk3qtwF34slW86hDTioR74mUzA1mDl7o/exec";
 
 const TOPIC_AREAS = [
   "Deep Ocean Biology & Bioluminescence",
@@ -344,7 +344,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
         generationConfig: {
           temperature: 0.95,
           topP: 0.99,
-          maxOutputTokens: 300
+          maxOutputTokens: 1024
         }
       };
 
@@ -372,12 +372,15 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
             continue;
           }
 
-          if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
-            console.log("  ⚠️ Gemini returned no candidates (possible safety block).");
+          const candidateParts = resData && resData.candidates && resData.candidates[0] && resData.candidates[0].content && resData.candidates[0].content.parts;
+          if (!candidateParts || !candidateParts.length) {
+            const finishReason = (resData && resData.candidates && resData.candidates[0] && resData.candidates[0].finishReason) || "unknown";
+            console.log(`  ⚠️ Gemini returned no candidate parts (finishReason: ${finishReason}).`);
             continue;
           }
 
-          const rawText = resData.candidates[0].content.parts[0].text;
+          const textPart = candidateParts.find(p => p && typeof p.text === "string" && !p.thought) || candidateParts[candidateParts.length - 1];
+          const rawText = (textPart && textPart.text) ? textPart.text : "";
           const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
 
           let parsed = null;
@@ -391,6 +394,8 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
                 category: randomTopic.split(' ')[0],
                 keywords: extractKeywords(match[1])
               };
+            } else {
+              console.log(`  ⚠️ Could not parse JSON from ${modelName}: ${rawText.substring(0, 120)}`);
             }
           }
 
@@ -439,60 +444,62 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
     throw new Error(`Failed to generate non-duplicate fact. Last detail: ${lastErrorDetail}`);
   }
 
-  // Step 3: Persist to local data/facts.json
-  try {
-    const localFactsPath = path.join(__dirname, '..', 'data', 'facts.json');
-    let localList = [];
-    if (fs.existsSync(localFactsPath)) {
-      localList = JSON.parse(fs.readFileSync(localFactsPath, 'utf8'));
-    }
-    localList.push({
-      id: "FACT-" + Date.now(),
-      date: new Date().toISOString(),
+  // Step 3: Save to Web App (Appends to Google Sheet & syncs Google Tasks/Keep)
+  console.log("💾 Saving unique fact to Google Sheet & Google Tasks via Web App REST POST...");
+  let savedFactRecord = {
+    id: "FACT-" + Date.now(),
+    date: new Date().toISOString(),
+    factText: uniqueFact.factText,
+    category: uniqueFact.category,
+    keywords: uniqueFact.keywords,
+    similarityScore: uniqueFact.similarityScore,
+    status: "Posted",
+    source: "GitHub Actions Midnight Automation"
+  };
+
+  const saveRes = await fetch(webAppUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "addFact",
       factText: uniqueFact.factText,
       category: uniqueFact.category,
       keywords: uniqueFact.keywords,
-      similarityScore: uniqueFact.similarityScore,
       status: "Posted",
       source: "GitHub Actions Midnight Automation"
-    });
-    fs.writeFileSync(localFactsPath, JSON.stringify(localList, null, 2));
-    console.log(`📁 Saved new fact to local data/facts.json (Total: ${localList.length}).`);
-  } catch (err) {
-    console.log(`Notice saving local facts.json: ${err.message}`);
+    })
+  });
+
+  const saveText = await saveRes.text();
+  if (!saveText.trim().startsWith("{")) {
+    throw new Error(`Web App POST returned HTTP ${saveRes.status} (non-JSON response). Verify Web App deployment access is ANYONE_ANONYMOUS.`);
   }
 
-  // Step 4: Save to Web App (Appends to Google Sheet & syncs Google Tasks/Keep)
-  console.log("💾 Saving unique fact to Google Sheet & Google Keep via Web App REST POST...");
-  try {
-    const saveRes = await fetch(webAppUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "addFact",
-        factText: uniqueFact.factText,
-        category: uniqueFact.category,
-        keywords: uniqueFact.keywords,
-        status: "Posted",
-        source: "GitHub Actions Midnight Automation"
-      })
-    });
+  const saveJson = JSON.parse(saveText);
+  if (!saveJson.success) {
+    throw new Error(`Web App POST failed: ${saveJson.error || saveText}`);
+  }
 
-    const saveText = await saveRes.text();
-    if (saveText.trim().startsWith("{")) {
-      const saveJson = JSON.parse(saveText);
-      if (saveJson.success) {
-        console.log(`🎉 SUCCESS! Fact #${saveJson.fact ? saveJson.fact.id : 'logged'} saved to Google Sheet & pushed to Google Tasks/Keep!`);
-        console.log(`Fact: "${uniqueFact.factText}"`);
-        return;
-      }
+  if (saveJson.fact) {
+    savedFactRecord = {
+      ...savedFactRecord,
+      ...saveJson.fact,
+      source: "GitHub Actions Midnight Automation"
+    };
+  }
+  console.log(`🎉 SUCCESS! Fact #${savedFactRecord.id} saved to Google Sheet & pushed to Google Tasks (${savedFactRecord.keepNoteId || 'synced'})!`);
+  console.log(`Fact: "${uniqueFact.factText}"`);
+
+  // Step 4: Persist full synced dataset + new fact to local data/facts.json
+  try {
+    const knownIds = new Set(existingFacts.map(f => f.id));
+    if (!knownIds.has(savedFactRecord.id)) {
+      existingFacts.push(savedFactRecord);
     }
-    console.log(`⚠️ Web App POST returned HTTP ${saveRes.status} (non-JSON response).`);
-    console.log("ℹ️ To allow external API POST access, open Apps Script -> Deploy -> Manage Deployments -> Edit -> set 'Who has access' to 'Anyone'.");
-    console.log(`Fact generated: "${uniqueFact.factText}"`);
+    fs.writeFileSync(localFactsPath, JSON.stringify(existingFacts, null, 2));
+    console.log(`📁 Saved updated fact database to local data/facts.json (Total: ${existingFacts.length}).`);
   } catch (err) {
-    console.log(`⚠️ Web App POST notice: ${err.message}`);
-    console.log(`Fact generated: "${uniqueFact.factText}"`);
+    console.log(`Notice saving local facts.json: ${err.message}`);
   }
 }
 

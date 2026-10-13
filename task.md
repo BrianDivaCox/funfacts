@@ -1,12 +1,10 @@
-# Tasks: Fix Nightly Midnight Fun Fact Automation Workflow & Model Fallback (v5.5.0)
+# Task List: Fix Nightly Fun Fact Automation & Live Sync (v5.6.0)
 
-- [x] Clean house and create project backup (Strict two-backup retention) <!-- id: 0 -->
-- [x] Update model fallback chain in `scripts/daily_automation.js` with active verified models <!-- id: 1 -->
-- [x] Add 503 instant model fallback and request timeouts in `scripts/daily_automation.js` <!-- id: 2 -->
-- [x] Update model fallback chain in `backend/Code.gs` and `app.js` <!-- id: 3 -->
-- [x] Bump version to 5.5.0 in `package.json` <!-- id: 4 -->
-- [x] Add v5.5.0 section to `CHANGELOG.md` with strict <= 10 words per bullet <!-- id: 5 -->
-- [x] Deploy backend to Google Apps Script via clasp push & deploy, and sync API URL <!-- id: 6 -->
-- [x] Run automated verification tests across all modified files and word count audits <!-- id: 7 -->
-- [x] Commit and push to GitHub with standard versioned title and Mini Summary <!-- id: 8 -->
-- [x] Clean up background tasks and provide detailed summary to user <!-- id: 9 -->
+- [x] Diagnose why no new facts appeared (inspected live GitHub Actions logs & Web App endpoint)
+- [x] Clean house & create pre-change project backup (strictly maintaining max 2 backups)
+- [x] Fix `backend/appsscript.json` (`"access": "ANYONE_ANONYMOUS"`) and `backend/Code.gs` token budget
+- [x] Deploy updated Google Apps Script Web App (`clasp push` & `clasp deploy`) and verify live JSON response
+- [x] Update `scripts/daily_automation.js`, `app.js`, and `.github/workflows/daily_automation.yml` with new Web App URL, hard POST verification, and `data/facts.json` auto-commit
+- [x] Bump version to `v5.6.0` in `package.json` and update `CHANGELOG.md` ($\le 10$ words per bullet)
+- [ ] Trigger live fun fact generation and verify end-to-end across Google Sheets, Google Tasks, `data/facts.json`, and headless Chrome UI test
+- [ ] Commit and push `v5.6.0` to GitHub and verify GitHub Actions `workflow_dispatch` run succeeds

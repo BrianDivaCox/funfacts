@@ -1814,7 +1814,7 @@ class FactVaultApp {
     this.facts = [];
     this.settings = {
       apiKey: "",
-      scriptUrl: "https://script.google.com/macros/s/AKfycbwPfsmZjpzKlt56qZ-2dFf_ClCYBk-AVluoDZSlb50W53OxK80S0_LsZGAcyi9ZlH4/exec",
+      scriptUrl: "https://script.google.com/macros/s/AKfycbw-Lc7XbpxcslSgdAKCQS0IMZiQWm_nOs1Pk3qtwF34slW86hDTioR74mUzA1mDl7o/exec",
       strictnessThreshold: 0.65
     };
     
@@ -1827,6 +1827,7 @@ class FactVaultApp {
     this.setupEventListeners();
     this.renderDashboard();
     this.renderFactLog();
+    this.syncFactsFromCloud();
   }
 
   // Storage
@@ -1841,7 +1842,7 @@ class FactVaultApp {
     }
     
     // Always bind to latest FunFacts Database Web App URL
-    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbwPfsmZjpzKlt56qZ-2dFf_ClCYBk-AVluoDZSlb50W53OxK80S0_LsZGAcyi9ZlH4/exec";
+    this.settings.scriptUrl = "https://script.google.com/macros/s/AKfycbw-Lc7XbpxcslSgdAKCQS0IMZiQWm_nOs1Pk3qtwF34slW86hDTioR74mUzA1mDl7o/exec";
 
     // Update settings DOM inputs
     document.getElementById("settingApiKey").value = this.settings.apiKey || "";
@@ -1903,10 +1904,9 @@ class FactVaultApp {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= DEFAULT_SEED_FACTS.length) {
+        if (Array.isArray(parsed) && parsed.length >= 1) {
           this.facts = parsed;
         } else {
-          // Auto-upgrade cache if seed dataset has grown (e.g. 5 -> 64 facts)
           this.facts = DEFAULT_SEED_FACTS;
           this.saveFacts();
         }
@@ -1918,6 +1918,41 @@ class FactVaultApp {
       this.facts = DEFAULT_SEED_FACTS;
       this.saveFacts();
     }
+  }
+
+  async syncFactsFromCloud() {
+    // 1. Try live Google Sheet Web App first
+    if (this.settings.scriptUrl) {
+      try {
+        const res = await fetch(`${this.settings.scriptUrl}?action=getFacts`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.facts) && data.facts.length > 0) {
+            this.facts = data.facts;
+            this.saveFacts();
+            this.renderDashboard();
+            this.renderFactLog();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Live Google Sheet fetch fallback to data/facts.json:", err);
+      }
+    }
+
+    // 2. Fallback to bundled data/facts.json
+    try {
+      const localRes = await fetch("data/facts.json");
+      if (localRes.ok) {
+        const localData = await localRes.json();
+        if (Array.isArray(localData) && localData.length > 0) {
+          this.facts = localData;
+          this.saveFacts();
+          this.renderDashboard();
+          this.renderFactLog();
+        }
+      }
+    } catch (e) {}
   }
 
   saveFacts() {

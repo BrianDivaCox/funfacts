@@ -1066,7 +1066,7 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
         generationConfig: {
           temperature: 0.95,
           topP: 0.99,
-          maxOutputTokens: 300
+          maxOutputTokens: 1024
         }
       };
 
@@ -1104,16 +1104,18 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
           continue;
         }
 
-        // Guard against empty/blocked candidates
-        if (!resData.candidates || !resData.candidates[0] || !resData.candidates[0].content) {
-          const blockReason = resData.promptFeedback ? JSON.stringify(resData.promptFeedback) : "unknown";
-          Logger.log(`${modelName} returned no usable candidates. Block reason: ${blockReason}`);
-          lastErrDetail = `No candidates from ${modelName}: ${blockReason}`;
+        // Guard against empty/blocked candidates or missing parts
+        const candidateParts = resData && resData.candidates && resData.candidates[0] && resData.candidates[0].content && resData.candidates[0].content.parts;
+        if (!candidateParts || !candidateParts.length) {
+          const blockReason = resData.promptFeedback ? JSON.stringify(resData.promptFeedback) : (resData.candidates && resData.candidates[0] ? resData.candidates[0].finishReason : "unknown");
+          Logger.log(`${modelName} returned no usable candidate parts. Finish/Block reason: ${blockReason}`);
+          lastErrDetail = `No candidate parts from ${modelName}: ${blockReason}`;
           retries--;
           continue;
         }
 
-        const rawText = resData.candidates[0].content.parts[0].text;
+        const textPart = candidateParts.find(p => p && typeof p.text === "string" && !p.thought) || candidateParts[candidateParts.length - 1];
+        const rawText = (textPart && textPart.text) ? textPart.text : "";
         Logger.log(`${modelName} raw fact text: ${rawText.substring(0, 200)}`);
         const cleanJsonText = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
         
@@ -1214,110 +1216,107 @@ function postToGoogleTasks(factText, category) {
   try {
     let funFactsTaskId = null;
     let lastError = "";
-    const token = ScriptApp.getOAuthToken();
-    const headers = {
-      "Authorization": "Bearer " + token,
-      "Content-Type": "application/json"
-    };
 
-    // 1. Find or create the "FunFacts" task list via REST
-    let funFactsListId = null;
+    // 1. Primary: Native Tasks Advanced Service (uses ZERO UrlFetchApp quota!)
     try {
-      const listResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
-        method: "get",
-        headers: headers,
-        muteHttpExceptions: true
-      });
-      if (listResp.getResponseCode() === 200) {
-        const listsData = JSON.parse(listResp.getContentText());
-        if (listsData.items && Array.isArray(listsData.items)) {
-          for (let i = 0; i < listsData.items.length; i++) {
-            if (listsData.items[i].title && listsData.items[i].title.toLowerCase() === "funfacts") {
-              funFactsListId = listsData.items[i].id;
+      let advListId = "@default";
+      try {
+        const taskLists = Tasks.Tasklists.list();
+        if (taskLists && taskLists.items) {
+          for (let i = 0; i < taskLists.items.length; i++) {
+            if (taskLists.items[i].title && taskLists.items[i].title.toLowerCase() === "funfacts") {
+              advListId = taskLists.items[i].id;
               break;
             }
           }
+          if (advListId === "@default") {
+            const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
+            advListId = newList.id;
+          }
         }
-      }
+      } catch (e) {}
 
-      // If "FunFacts" list does not exist yet, create it
-      if (!funFactsListId) {
-        const createListResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
-          method: "post",
-          headers: headers,
-          payload: JSON.stringify({ title: "FunFacts" }),
-          muteHttpExceptions: true
-        });
-        if (createListResp.getResponseCode() === 200 || createListResp.getResponseCode() === 201) {
-          const newListData = JSON.parse(createListResp.getContentText());
-          funFactsListId = newListData.id;
-          Logger.log("Created new 'FunFacts' task list with ID: " + funFactsListId);
-        }
-      }
-    } catch (listErr) {
-      Logger.log("Notice finding/creating FunFacts list via REST: " + listErr.message);
-    }
-
-    // 2. Post task to the "FunFacts" list
-    const targetListId = funFactsListId || "@default";
-    try {
-      const taskPayload = {
+      const taskObj = {
         title: cleanFact,
         notes: `Category: #${catToUse} | Added by FactVault AI`
       };
-
-      const resp = UrlFetchApp.fetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(targetListId)}/tasks`, {
-        method: "post",
-        headers: headers,
-        payload: JSON.stringify(taskPayload),
-        muteHttpExceptions: true
-      });
-      
-      const code = resp.getResponseCode();
-      const body = resp.getContentText();
-      Logger.log(`REST Google Tasks response (${code}) on list '${targetListId}': ${body}`);
-
-      if (code === 200 || code === 201) {
-        const json = JSON.parse(body);
-        funFactsTaskId = json.id;
-      } else {
-        lastError = `HTTP ${code}: ${body}`;
+      const createdTask = Tasks.Tasks.insert(taskObj, advListId);
+      if (createdTask && createdTask.id) {
+        funFactsTaskId = createdTask.id;
+        Logger.log("Successfully posted via Tasks Advanced Service: " + funFactsTaskId);
       }
-    } catch (restErr) {
-      lastError = restErr.message;
-      Logger.log("Notice posting via REST token: " + restErr.message);
+    } catch (advErr) {
+      lastError = advErr.message;
+      Logger.log("Notice posting via Advanced Service: " + advErr.message);
     }
 
-    // 3. Fallback to Advanced Service targeting FunFacts list if needed
+    // 2. Fallback: REST OAuth if Advanced Service didn't return an ID
     if (!funFactsTaskId) {
+      const token = ScriptApp.getOAuthToken();
+      const headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      };
+
+      let funFactsListId = null;
       try {
-        let advListId = "@default";
-        try {
-          const taskLists = Tasks.Tasklists.list();
-          if (taskLists && taskLists.items) {
-            for (let i = 0; i < taskLists.items.length; i++) {
-              if (taskLists.items[i].title.toLowerCase() === "funfacts") {
-                advListId = taskLists.items[i].id;
+        const listResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+          method: "get",
+          headers: headers,
+          muteHttpExceptions: true
+        });
+        if (listResp.getResponseCode() === 200) {
+          const listsData = JSON.parse(listResp.getContentText());
+          if (listsData.items && Array.isArray(listsData.items)) {
+            for (let i = 0; i < listsData.items.length; i++) {
+              if (listsData.items[i].title && listsData.items[i].title.toLowerCase() === "funfacts") {
+                funFactsListId = listsData.items[i].id;
                 break;
               }
             }
-            if (advListId === "@default") {
-              const newList = Tasks.Tasklists.insert({ title: "FunFacts" });
-              advListId = newList.id;
-            }
           }
-        } catch (e) {}
+        }
 
-        const taskObj = {
+        if (!funFactsListId) {
+          const createListResp = UrlFetchApp.fetch("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
+            method: "post",
+            headers: headers,
+            payload: JSON.stringify({ title: "FunFacts" }),
+            muteHttpExceptions: true
+          });
+          if (createListResp.getResponseCode() === 200 || createListResp.getResponseCode() === 201) {
+            const newListData = JSON.parse(createListResp.getContentText());
+            funFactsListId = newListData.id;
+          }
+        }
+      } catch (listErr) {
+        Logger.log("Notice finding/creating FunFacts list via REST: " + listErr.message);
+      }
+
+      const targetListId = funFactsListId || "@default";
+      try {
+        const taskPayload = {
           title: cleanFact,
           notes: `Category: #${catToUse} | Added by FactVault AI`
         };
-        const createdTask = Tasks.Tasks.insert(taskObj, advListId);
-        funFactsTaskId = createdTask.id;
-        Logger.log("Successfully posted via Tasks Advanced Service: " + funFactsTaskId);
-      } catch (advErr) {
-        if (!lastError) lastError = advErr.message;
-        Logger.log("Notice posting via Advanced Service: " + advErr.message);
+
+        const resp = UrlFetchApp.fetch(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(targetListId)}/tasks`, {
+          method: "post",
+          headers: headers,
+          payload: JSON.stringify(taskPayload),
+          muteHttpExceptions: true
+        });
+        
+        const code = resp.getResponseCode();
+        const body = resp.getContentText();
+        if (code === 200 || code === 201) {
+          const json = JSON.parse(body);
+          funFactsTaskId = json.id;
+        } else {
+          lastError = `HTTP ${code}: ${body}`;
+        }
+      } catch (restErr) {
+        lastError = restErr.message;
       }
     }
 
@@ -1994,6 +1993,8 @@ function doGet(e) {
           strictnessThreshold: parseFloat(getSetting("STRICTNESS_THRESHOLD")) || 0.65
         }
       };
+    } else if (action === "runDailyAutomation") {
+      responseData = dailyMidnightTrigger();
     } else {
       responseData = { success: false, error: "Unknown GET action: " + action };
     }
@@ -2053,6 +2054,8 @@ function doPost(e) {
     } else if (action === "generateFact") {
       const generated = generateUniqueFactWithGemini(postData.apiKey);
       responseData = { success: true, fact: generated };
+    } else if (action === "runDailyAutomation") {
+      responseData = dailyMidnightTrigger();
     } else if (action === "saveSetting") {
       saveSetting(postData.key, postData.value);
       responseData = { success: true, message: `Setting ${postData.key} saved.` };

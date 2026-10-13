@@ -2,6 +2,15 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.6.0] - 2026-10-12
+
+### Fixed & Enhanced
+- Enabled anonymous Web App access for GitHub Actions sync.
+- Added live Google Sheet cloud sync to web dashboard.
+- Prioritized native Tasks service to bypass UrlFetch quota limits.
+- Increased Gemini output token budget to prevent truncated responses.
+- Added automatic repository commit for newly generated daily facts.
+
 ## [5.5.0] - 2026-10-12
 
 ### Fixed & Enhanced
