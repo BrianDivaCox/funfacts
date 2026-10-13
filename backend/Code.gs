@@ -1817,6 +1817,107 @@ function cleanOldGoogleTasks() {
 }
 
 /**
+ * Delete a specific Google Task by ID across FunFacts list or @default
+ */
+function deleteGoogleTaskById(taskId) {
+  if (!taskId) return { success: false, error: "Empty taskId" };
+  const cleanId = String(taskId).replace(/^GTASK-/, "").trim();
+  let deleted = false;
+  try {
+    const listIds = ["@default"];
+    try {
+      const taskLists = Tasks.Tasklists.list();
+      if (taskLists && taskLists.items) {
+        for (const item of taskLists.items) {
+          if (item.title && item.title.toLowerCase() === "funfacts") {
+            listIds.push(item.id);
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+
+    for (const listId of listIds) {
+      try {
+        Tasks.Tasks.remove(listId, cleanId);
+        deleted = true;
+        Logger.log(`Deleted task ${cleanId} from list ${listId}`);
+      } catch (err) {}
+    }
+    return { success: true, deleted: deleted, taskId: cleanId };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Move a specific fact from Fact Log to Duplicates Archive and purge its Google Task
+ */
+function archiveSpecificFact(factId, factTextQuery) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  initSpreadsheet();
+  const factSheet = ss.getSheetByName(SHEET_NAME);
+  const dupSheet = ss.getSheetByName(DUPLICATES_SHEET);
+
+  if (!factSheet || factSheet.getLastRow() < 2) {
+    return { success: false, error: "Fact Log is empty" };
+  }
+
+  const data = factSheet.getRange(2, 1, factSheet.getLastRow() - 1, 9).getValues();
+  let targetRowIndex = -1;
+  let rowData = null;
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const rowId = String(row[0] || "");
+    const rowText = String(row[2] || "");
+    if ((factId && rowId === String(factId)) || (factTextQuery && rowText.toLowerCase().includes(String(factTextQuery).toLowerCase()))) {
+      targetRowIndex = i + 2; // 1-indexed row in sheet
+      rowData = row;
+      break;
+    }
+  }
+
+  if (targetRowIndex === -1 || !rowData) {
+    return { success: false, error: "Fact not found in Fact Log" };
+  }
+
+  // 1. Delete associated Google Task if any
+  const keepNoteId = String(rowData[7] || "");
+  if (keepNoteId.startsWith("GTASK-")) {
+    deleteGoogleTaskById(keepNoteId.replace("GTASK-", ""));
+  }
+
+  // 2. Append to Duplicates Archive
+  const archiveRow = [
+    rowData[0],                                              // Duplicate ID
+    new Date().toISOString(),                                // Date Archived
+    rowData[2],                                              // Fact Text
+    rowData[3] || "General",                                 // Category
+    "USER-FLAGGED",                                          // Matched Original ID
+    "Flagged by user as previously used fact",               // Matched Original Fact Text
+    1.0,                                                     // Similarity Score
+    "Repeat #1",                                             // Repeat #
+    rowData[8] || "User Archive Request"                     // Source
+  ];
+
+  const dupStartRow = dupSheet.getLastRow() + 1;
+  dupSheet.getRange(dupStartRow, 1, 1, 9).setValues([archiveRow]);
+
+  // 3. Delete row from Fact Log
+  factSheet.deleteRow(targetRowIndex);
+
+  SpreadsheetApp.flush();
+  formatSheetArtistically();
+
+  return {
+    success: true,
+    message: `Fact #${rowData[0]} moved to Duplicates Archive and removed from Google Tasks & Fact Log`,
+    archivedFact: rowData[2]
+  };
+}
+
+/**
  * Post Fact to Google Keep & Google Tasks App
  */
 function postToGoogleKeep(factText, category) {
@@ -2054,6 +2155,10 @@ function doPost(e) {
       responseData = { success: true, fact: generated };
     } else if (action === "runDailyAutomation") {
       responseData = dailyMidnightTrigger();
+    } else if (action === "archiveFact") {
+      responseData = archiveSpecificFact(postData.id || postData.factId, postData.factText);
+    } else if (action === "deleteTask" || action === "deleteGoogleTask") {
+      responseData = deleteGoogleTaskById(postData.taskId);
     } else if (action === "saveSetting") {
       saveSetting(postData.key, postData.value);
       responseData = { success: true, message: `Setting ${postData.key} saved.` };

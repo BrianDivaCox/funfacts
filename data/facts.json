@@ -2407,9 +2407,9 @@
       "instrument origins",
       "music history"
     ],
-    "similarityScore": 0.338,
-    "status": "Posted",
-    "source": "GitHub Actions Midnight Automation",
+    "similarityScore": 1,
+    "status": "Duplicate (Flagged)",
+    "source": "Flagged by User (Previously Used)",
     "keepNoteId": "GTASK-UF9vbTVwbkI0SEV5LTk4NQ"
   }
 ]
