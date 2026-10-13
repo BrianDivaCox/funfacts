@@ -2411,5 +2411,28 @@
     "status": "Duplicate (Flagged)",
     "source": "Flagged by User (Previously Used)",
     "keepNoteId": "GTASK-UF9vbTVwbkI0SEV5LTk4NQ"
+  },
+  {
+    "id": "FACT-1791881877790",
+    "date": "2026-10-13T08:57:57.790Z",
+    "factText": "🌊 Deep-sea glass sponges in the Antarctic can live for over 10,000 years, making them among the oldest living animals on Earth! 🧽 #funfact",
+    "category": "Deep Ocean Biology & Bioluminescence",
+    "keywords": [
+      "deepsea",
+      "glas",
+      "spong",
+      "antarctic",
+      "live",
+      "10000",
+      "year",
+      "among",
+      "old",
+      "living",
+      "animal",
+      "earth"
+    ],
+    "similarityScore": 0.333,
+    "status": "Posted",
+    "keepNoteId": "GTASK-VEhCc3RlbFRtTjMzc2hfRQ"
   }
 ]

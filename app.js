@@ -2273,7 +2273,10 @@ class FactVaultApp {
     const container = document.getElementById("dashboardRecentGrid");
     container.innerHTML = "";
     
-    const recent = [...this.facts].reverse().slice(0, 3);
+    const activeFacts = this.facts.filter(f => f.status !== "Duplicate (Flagged)" && f.status !== "Archived");
+    const recent = [...activeFacts]
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      .slice(0, 3);
     if (recent.length === 0) {
       container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No fun facts recorded yet.</p></div>`;
       return;
@@ -2292,7 +2295,8 @@ class FactVaultApp {
     const catFilter = document.getElementById("categoryFilter").value;
     const statusFilter = document.getElementById("statusFilter").value;
 
-    const filtered = [...this.facts].reverse().filter(fact => {
+    const sortedFacts = [...this.facts].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const filtered = sortedFacts.filter(fact => {
       const matchQuery = !query || 
         fact.factText.toLowerCase().includes(query) || 
         fact.category.toLowerCase().includes(query) ||

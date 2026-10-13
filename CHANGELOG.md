@@ -2,6 +2,17 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.7.0] - 2026-10-13
+
+### Fixed & Enhanced
+- Archived repeated electric guitar fact into Duplicates Archive tab.
+- Deleted redundant duplicate entry from Google Tasks list.
+- Grouped and numbered repeated archive entries with repeat counters.
+- Expanded duplicate engine to inspect Duplicates Archive history.
+- Refined keyword stemmer stop words to eliminate false positives.
+- Generated and posted fresh Antarctic glass sponges fun fact.
+- Enhanced dashboard recent grid to display newest active facts.
+
 ## [5.6.0] - 2026-10-12
 
 ### Fixed & Enhanced

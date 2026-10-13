@@ -1,10 +1,13 @@
-# Task List: Fix Nightly Fun Fact Automation & Live Sync (v5.6.0)
+# Task List: Archive Duplicate Fact & Generate Fresh Replacement (v5.7.0)
 
-- [x] Diagnose why no new facts appeared (inspected live GitHub Actions logs & Web App endpoint)
-- [x] Clean house & create pre-change project backup (strictly maintaining max 2 backups)
-- [x] Fix `backend/appsscript.json` (`"access": "ANYONE_ANONYMOUS"`) and `backend/Code.gs` token budget
-- [x] Deploy updated Google Apps Script Web App (`clasp push` & `clasp deploy`) and verify live JSON response
-- [x] Update `scripts/daily_automation.js`, `app.js`, and `.github/workflows/daily_automation.yml` with new Web App URL, hard POST verification, and `data/facts.json` auto-commit
-- [x] Bump version to `v5.6.0` in `package.json` and update `CHANGELOG.md` ($\le 10$ words per bullet)
-- [x] Trigger live fun fact generation and verify end-to-end across Google Sheets, Google Tasks, `data/facts.json`, and headless Chrome UI test
-- [x] Commit and push `v5.6.0` to GitHub and verify GitHub Actions `workflow_dispatch` run succeeds
+- [x] Clean house and create pre-change project backup (strictly maintaining max 2 backups)
+- [x] Add `archiveFact` and `deleteGoogleTask` REST endpoints in `backend/Code.gs` and deploy via Clasp
+- [x] Archive `FACT-1791871419092` ("Frying Pan") from Google Sheet & delete from Google Tasks
+- [x] Update `data/facts.json` to record "Frying Pan" as duplicate and prevent future generation
+- [x] Generate and post a fresh, novel replacement daily fun fact to Google Sheet & Google Tasks
+- [x] Verify live Google Sheet and Google Tasks row contents
+- [x] Run headless Chrome Puppeteer E2E tests across mobile (375px), tablet (768px), desktop (1280px)
+- [x] Run duplicate engine benchmark suite
+- [x] Bump version to `v5.7.0` in `package.json` and update `CHANGELOG.md` ($\le 10$ words per bullet)
+- [x] Commit and push `v5.7.0` to GitHub `origin/main`
+- [x] Clean up all temporary scripts and verify zero dangling background processes

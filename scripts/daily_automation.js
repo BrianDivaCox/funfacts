@@ -108,7 +108,8 @@ function extractKeywords(text) {
     "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so",
     "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now",
     "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
-    "does", "did", "fact", "did", "you", "know", "that", "this", "these", "those"
+    "does", "did", "fact", "did", "you", "know", "that", "this", "these", "those",
+    "funfact", "dailyfact", "they", "them", "their", "it", "its", "make", "makes", "making"
   ]);
   const words = normalizeText(text).split(" ");
   const stemmed = words
@@ -287,6 +288,37 @@ async function runAutomation() {
       }
     } else {
       console.log("ℹ️ Web App returned HTML (Google Sign-in redirect). Using local facts database.");
+    }
+
+    // Also fetch Duplicates Archive explicitly to guarantee complete coverage
+    try {
+      const archRes = await fetch(`${webAppUrl}?action=getArchive`);
+      const archText = await archRes.text();
+      if (archText.trim().startsWith("{") || archText.trim().startsWith("[")) {
+        const archData = JSON.parse(archText);
+        if (archData.success && Array.isArray(archData.archive)) {
+          const knownTexts = new Set(existingFacts.map(f => normalizeText(f.factText)));
+          for (const af of archData.archive) {
+            if (af.factText && !knownTexts.has(normalizeText(af.factText))) {
+              existingFacts.push({
+                id: af.id,
+                date: af.dateArchived || af.date,
+                factText: af.factText,
+                category: af.category || "General",
+                keywords: extractKeywords(af.factText),
+                similarityScore: af.score || 1.0,
+                status: "Duplicate (Flagged)",
+                keepNoteId: "",
+                source: af.source || "Duplicates Archive"
+              });
+              knownTexts.add(normalizeText(af.factText));
+            }
+          }
+          console.log(`📦 Synced with Duplicates Archive! Total unique records: ${existingFacts.length}.`);
+        }
+      }
+    } catch (archErr) {
+      console.log(`Note fetching archive: ${archErr.message}`);
     }
   } catch (err) {
     console.log(`⚠️ Note fetching existing facts: ${err.message}. Proceeding with local facts.`);
@@ -499,9 +531,25 @@ Provide your response in raw JSON format (no markdown codeblock wrapper) matchin
   } catch (err) {
     console.log(`Notice saving local facts.json: ${err.message}`);
   }
+  return savedFactRecord;
 }
 
-runAutomation().catch(err => {
-  console.error(`💥 Automation failed: ${err.message}`);
-  process.exit(1);
-});
+module.exports = {
+  runAutomation,
+  normalizeText,
+  stemWord,
+  extractKeywords,
+  buildKeywordIndex,
+  calculateLevenshteinSimilarity,
+  calculateJaccardOverlap,
+  checkDuplicate,
+  TOPIC_AREAS,
+  MODELS_TO_TRY
+};
+
+if (require.main === module) {
+  runAutomation().catch(err => {
+    console.error(`💥 Automation failed: ${err.message}`);
+    process.exit(1);
+  });
+}
