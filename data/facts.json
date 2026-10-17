@@ -3437,5 +3437,46 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-OE9fRV9FbjF3c1Q0Q3hhbg"
+  },
+  {
+    "id": "FACT-1792223422099",
+    "date": "2026-10-17T07:50:22.099Z",
+    "factText": "🧠 Your brain generates enough electricity to power a small light bulb! 💡 It's a powerhouse of constant activity even while you sleep. ✨ #funfact",
+    "category": "Neuroscience & Brain Quirks",
+    "keywords": [
+      "brain",
+      "electricity",
+      "power"
+    ],
+    "similarityScore": 0.366,
+    "status": "Posted",
+    "keepNoteId": "GTASK-cVlsVHNtdHFhX0s1bmpiOQ",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1792236777986",
+    "date": "2026-10-17T11:32:57.986Z",
+    "factText": "In WWII, British intelligence secretly recruited codebreakers by testing who could solve The Daily Telegraph crossword in under 12 minutes! 🗞️🧩 #funfact",
+    "category": "Cryptography",
+    "keywords": [
+      "wwii",
+      "british",
+      "intelligence",
+      "secret",
+      "recruit",
+      "codebreaker",
+      "test",
+      "who",
+      "could",
+      "solve",
+      "dai",
+      "telegraph",
+      "crossword",
+      "minut"
+    ],
+    "similarityScore": 0.338,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-THJSUE5FdHBzN0tQamI3Yg"
   }
 ]
