@@ -1,22 +1,23 @@
-# Implementation Plan: Hide Settings Behind Google Sign-In Admin Menu (v5.9.0)
+# Implementation Plan: Pure Direct Google Sign-In Button (v5.9.1)
 
 ## Objectives
-1. **Hide Settings & Automation for Public Visitors**:
-   - The "⚙️ Settings & Automation" tab button and its section (`#settings`) must be hidden and inaccessible by default for public visitors to `https://briandivacox.github.io/funfacts/`.
-   - Prevent unauthorized access or tab switching to Settings if unauthenticated.
-2. **Google Sign-In Admin Menu**:
-   - Add a sleek Google Sign-In Admin button in the top navigation/header.
-   - Implement Admin Auth Modal with Google Sign-In (GIS) and authorized administrator verification (`briandivacox@gmail.com`).
-   - On successful login: unlock Settings tab with an "ADMIN" badge, display admin avatar and name with a 1-click Sign Out option.
-   - On sign-out: immediately lock and hide Settings, redirect user back to Dashboard, and clear admin session.
+1. **Eliminate Modal and Text Clutter**:
+   - Remove the entire Admin Authentication Modal, explanatory text, and target email box.
+   - The user requested: "we just need the google sign in button".
+   - The header will have a clean, direct "Sign in with Google" button.
+2. **Direct Google Sign-In Authentication**:
+   - Clicking the Google Sign-In button directly launches Google Sign-In (Firebase Auth with GoogleAuthProvider / GIS popup).
+   - Only `briandivacox@gmail.com` is granted administrator access.
+   - Any other account is rejected with an immediate error toast.
+   - Authenticated state displays the user's Google avatar and "Sign Out" button.
+   - Settings tab remains completely hidden and inaccessible to public visitors until `briandivacox@gmail.com` signs in.
 3. **Automated Verification**:
-   - Run headless Google Chrome Puppeteer E2E tests across mobile (375px), tablet (768px), and desktop (1280px) asserting:
-     - Settings tab is completely hidden in public mode.
-     - Settings tab unlocks upon admin authentication.
-     - Settings tab locks and hides upon sign-out.
-     - 0 console errors and 0 horizontal overflow.
-   - Run duplicate engine benchmarks.
+   - Run headless Chrome E2E test verifying:
+     - Public view: only the direct Google Sign-In button is in the header, Settings tab is hidden.
+     - Direct Google Sign-In unlocks Settings tab for `briandivacox@gmail.com`.
+     - Sign Out locks Settings and returns view to Dashboard.
+     - Responsive audits pass with 0 errors across 375px, 768px, 1280px.
 4. **Deploy & Push**:
-   - Bump version to `5.9.0` in `package.json`.
-   - Update `CHANGELOG.md` with strictly $\le 10$ words per bullet.
-   - Commit and push to GitHub `origin/main`.
+   - Bump version to `5.9.1`.
+   - Update `CHANGELOG.md` with $\le 10$ words per bullet.
+   - Push to GitHub `origin/main` for live GitHub Pages deployment.

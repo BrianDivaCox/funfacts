@@ -2,6 +2,15 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.9.1] - 2026-10-18
+
+### Fixed & Enhanced
+- Streamlined admin access with direct Google Sign-In button.
+- Removed modal dialogs and extra explanatory auth text.
+- Settings tab remains completely hidden from unauthorized visitors.
+- Strict admin authorization verified for briandivacox@gmail.com.
+- Instant one-click sign out returns visitor to dashboard.
+
 ## [5.9.0] - 2026-10-18
 
 ### Added & Enhanced

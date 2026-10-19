@@ -1,6 +1,6 @@
 /**
  * End-to-End Automated Verification Test Suite
- * Tests Google Sign-In Admin Menu, Settings Security Guard, and Responsive Layout
+ * Tests Pure Direct Google Sign-In, Route Security Guards, and Responsive Layouts
  */
 
 const http = require('http');
@@ -50,7 +50,7 @@ function createServer() {
 }
 
 async function runVerification() {
-  console.log('🚀 Starting FactVault AI Admin Auth E2E Test Suite...');
+  console.log('🚀 Starting FactVault AI Direct Google Sign-In E2E Test Suite...');
   const server = createServer();
   await new Promise((resolve) => server.listen(PORT, resolve));
   console.log(`📡 Local test server running on http://127.0.0.1:${PORT}`);
@@ -76,7 +76,7 @@ async function runVerification() {
 
   try {
     // -------------------------------------------------------------
-    // TEST 1: Public Default State (Settings completely hidden)
+    // TEST 1: Public Default State (Settings strictly hidden)
     // -------------------------------------------------------------
     console.log('\n[TEST 1] Verifying Public Default State (Unauthenticated)...');
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -98,6 +98,7 @@ async function runVerification() {
         secDisplay: secComputed.display,
         loginDisplay: loginComputed.display,
         profileDisplay: profileComputed.display,
+        loginBtnText: adminLoginBtn ? adminLoginBtn.innerText.trim() : '',
         isAdmin: window.app ? window.app.isAdmin : null
       };
     });
@@ -110,7 +111,10 @@ async function runVerification() {
       throw new Error(`FAIL: Settings Section is visible to public! display=${publicState.secDisplay}`);
     }
     if (publicState.loginDisplay === 'none') {
-      throw new Error(`FAIL: Admin Login Button is hidden from public! display=${publicState.loginDisplay}`);
+      throw new Error(`FAIL: Google Sign In Button is hidden from public! display=${publicState.loginDisplay}`);
+    }
+    if (!publicState.loginBtnText.includes('Sign In with Google')) {
+      throw new Error(`FAIL: Google Sign In button does not say "Sign In with Google"! text=${publicState.loginBtnText}`);
     }
     if (publicState.profileDisplay !== 'none') {
       throw new Error(`FAIL: Admin Profile Pill should be hidden from public! display=${publicState.profileDisplay}`);
@@ -118,7 +122,7 @@ async function runVerification() {
     if (publicState.isAdmin !== false) {
       throw new Error(`FAIL: app.isAdmin should be false! value=${publicState.isAdmin}`);
     }
-    console.log('✅ TEST 1 PASSED: Settings tab and section strictly hidden in public state.');
+    console.log('✅ TEST 1 PASSED: Settings tab & section strictly hidden; direct Google Sign In button displayed.');
 
     // -------------------------------------------------------------
     // TEST 2: Security Route Guard (Prevent Unauthorized Tab Switch)
@@ -129,13 +133,11 @@ async function runVerification() {
       const activeTabBtn = document.querySelector('.tab-btn.active');
       const activeSection = document.querySelector('.tab-content.active');
       const toast = document.querySelector('.toast');
-      const modal = document.getElementById('adminAuthModal');
 
       return {
         activeTab: activeTabBtn ? activeTabBtn.dataset.tab : null,
         activeSecId: activeSection ? activeSection.id : null,
-        toastText: toast ? toast.innerText : null,
-        modalVisible: modal ? window.getComputedStyle(modal).display : null
+        toastText: toast ? toast.innerText : null
       };
     });
 
@@ -146,29 +148,12 @@ async function runVerification() {
     if (switchAttempt.activeSecId === 'settings') {
       throw new Error('FAIL: Settings section became active for unauthorized user!');
     }
-    if (switchAttempt.modalVisible === 'none') {
-      throw new Error('FAIL: Admin login modal should have opened on unauthorized settings attempt!');
-    }
-    console.log('✅ TEST 2 PASSED: Security Guard rejected unauthorized access and opened Admin Auth Modal.');
-
-    // Close modal
-    await page.click('#closeAdminAuthModalBtn');
-    await page.waitForFunction(() => {
-      const modal = document.getElementById('adminAuthModal');
-      return window.getComputedStyle(modal).display === 'none';
-    });
+    console.log('✅ TEST 2 PASSED: Security Guard rejected unauthorized access and displayed warning toast.');
 
     // -------------------------------------------------------------
     // TEST 3: Unauthorized Google Sign-In Rejection
     // -------------------------------------------------------------
     console.log('\n[TEST 3] Verifying Rejection of Unauthorized Google Account...');
-    await page.click('#adminLoginBtn');
-    await page.waitForFunction(() => {
-      const modal = document.getElementById('adminAuthModal');
-      return window.getComputedStyle(modal).display === 'flex';
-    });
-
-    // Simulate GIS response with a non-admin email
     const fakeUnauthorizedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 
       Buffer.from(JSON.stringify({
         email: 'random_visitor@gmail.com',
@@ -178,11 +163,11 @@ async function runVerification() {
 
     const rejectionResult = await page.evaluate((token) => {
       window.app.handleGoogleCredentialResponse({ credential: token });
-      const alertBox = document.getElementById('adminAuthAlert');
+      const toasts = document.querySelectorAll('.toast');
+      const latestToast = toasts.length > 0 ? toasts[toasts.length - 1] : null;
       return {
         isAdmin: window.app.isAdmin,
-        alertVisible: alertBox ? window.getComputedStyle(alertBox).display !== 'none' : false,
-        alertText: alertBox ? alertBox.innerText : null
+        toastText: latestToast ? latestToast.innerText : null
       };
     }, fakeUnauthorizedToken);
 
@@ -190,17 +175,16 @@ async function runVerification() {
     if (rejectionResult.isAdmin === true) {
       throw new Error('FAIL: Unauthorized email was granted admin access!');
     }
-    if (!rejectionResult.alertVisible || !rejectionResult.alertText.includes('random_visitor@gmail.com')) {
-      throw new Error('FAIL: Alert banner did not display unauthorized access rejection!');
+    if (!rejectionResult.toastText || !rejectionResult.toastText.includes('random_visitor@gmail.com')) {
+      throw new Error('FAIL: Toast alert did not display unauthorized access rejection!');
     }
-    console.log('✅ TEST 3 PASSED: Unauthorized account correctly rejected with clear feedback.');
+    console.log('✅ TEST 3 PASSED: Unauthorized account correctly rejected with toast alert.');
 
     // -------------------------------------------------------------
-    // TEST 4: Authorized Admin Verification (briandivacox@gmail.com)
+    // TEST 4: Direct Google Sign-In as Brian Cox (briandivacox@gmail.com)
     // -------------------------------------------------------------
-    console.log('\n[TEST 4] Verifying Authorized Admin Authentication...');
-    // Click direct verified button for Brian Cox
-    await page.click('#adminDirectAuthBtn');
+    console.log('\n[TEST 4] Verifying Direct Google Sign-In for Brian Cox...');
+    await page.click('#adminLoginBtn');
 
     await page.waitForFunction(() => {
       return window.app && window.app.isAdmin === true;
@@ -211,7 +195,6 @@ async function runVerification() {
       const adminLoginBtn = document.getElementById('adminLoginBtn');
       const adminProfilePill = document.getElementById('adminProfilePill');
       const adminName = document.getElementById('adminName');
-      const modal = document.getElementById('adminAuthModal');
 
       return {
         isAdmin: window.app.isAdmin,
@@ -220,7 +203,6 @@ async function runVerification() {
         loginDisplay: window.getComputedStyle(adminLoginBtn).display,
         profileDisplay: window.getComputedStyle(adminProfilePill).display,
         adminName: adminName.textContent,
-        modalDisplay: window.getComputedStyle(modal).display,
         sessionStored: sessionStorage.getItem('factvault_admin_session') !== null
       };
     });
@@ -236,18 +218,15 @@ async function runVerification() {
       throw new Error('FAIL: Settings tab button does not have ADMIN tag badge!');
     }
     if (adminUnlockedState.loginDisplay !== 'none') {
-      throw new Error('FAIL: Admin login button is still visible in header!');
+      throw new Error('FAIL: Google Sign In button is still visible in header!');
     }
     if (adminUnlockedState.profileDisplay === 'none') {
       throw new Error('FAIL: Admin profile pill is hidden in header!');
     }
-    if (adminUnlockedState.modalDisplay !== 'none') {
-      throw new Error('FAIL: Admin auth modal should be closed upon successful login!');
-    }
     if (!adminUnlockedState.sessionStored) {
       throw new Error('FAIL: Admin session was not saved to sessionStorage!');
     }
-    console.log('✅ TEST 4 PASSED: Admin unlocked, header profile rendered, settings tab visible.');
+    console.log('✅ TEST 4 PASSED: Direct Google Sign-In unlocked Settings tab with ADMIN tag.');
 
     // -------------------------------------------------------------
     // TEST 5: Admin Settings Tab Navigation & Controls Functionality
@@ -279,7 +258,7 @@ async function runVerification() {
     if (!settingsControlsState.hasApiKeyInput || !settingsControlsState.hasSaveBtn) {
       throw new Error('FAIL: Settings controls are missing or not rendered properly!');
     }
-    console.log('✅ TEST 5 PASSED: Admin successfully navigated to Settings; all controls available.');
+    console.log('✅ TEST 5 PASSED: Admin navigated to Settings; all controls available.');
 
     // -------------------------------------------------------------
     // TEST 6: Admin Sign Out Journey
@@ -325,7 +304,7 @@ async function runVerification() {
       throw new Error(`FAIL: View was not redirected back to dashboard! Active=${signedOutState.activeTab}`);
     }
     if (signedOutState.loginDisplay === 'none') {
-      throw new Error('FAIL: Login button was not restored in header!');
+      throw new Error('FAIL: Google Sign In button was not restored in header!');
     }
     if (signedOutState.profileDisplay !== 'none') {
       throw new Error('FAIL: Profile pill was not hidden upon sign out!');
@@ -370,7 +349,6 @@ async function runVerification() {
     // TEST 8: Console Error Gate
     // -------------------------------------------------------------
     console.log('\n[TEST 8] Checking Console Errors...');
-    // Filter out expected third-party GIS network notice if any
     const realErrors = consoleErrors.filter(err => !err.includes('accounts.google.com'));
     if (realErrors.length > 0) {
       console.error('Console errors logged:', realErrors);

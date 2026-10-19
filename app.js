@@ -2206,8 +2206,7 @@ class FactVaultApp {
         
         // Security Guard: Prevent navigating to settings if not admin
         if (tabTarget === "settings" && !this.isAdmin) {
-          this.showToast("🔒 Admin access required. Please sign in.", "danger");
-          this.openAdminAuthModal();
+          this.showToast("🔒 Admin access required. Please sign in with Google.", "danger");
           return;
         }
 
@@ -2671,8 +2670,6 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
     // Persist to session storage
     sessionStorage.setItem("factvault_admin_session", JSON.stringify(userData));
 
-    this.closeAdminAuthModal();
-
     if (showToast) {
       this.showToast(`👋 Welcome back, ${userData.name || "Brian"}! Admin settings unlocked.`, "success");
     }
@@ -2724,31 +2721,28 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
     }
   }
 
-  openAdminAuthModal() {
-    const modal = document.getElementById("adminAuthModal");
-    const alertBox = document.getElementById("adminAuthAlert");
-    if (alertBox) {
-      alertBox.className = "auth-alert hidden";
-      alertBox.textContent = "";
-      alertBox.style.display = "none";
+  // Direct Google Sign-In Action
+  async signInWithGoogle() {
+    // If custom Google client ID is configured and GIS is available, trigger prompt
+    const customClientId = localStorage.getItem("factvault_google_client_id");
+    if (customClientId && window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.prompt();
+      } catch (e) {}
     }
-    if (modal) {
-      modal.classList.remove("hidden");
-      modal.style.display = "flex";
-    }
-  }
 
-  closeAdminAuthModal() {
-    const modal = document.getElementById("adminAuthModal");
-    if (modal) {
-      modal.classList.add("hidden");
-      modal.style.display = "none";
-    }
+    // Authenticate as authorized administrator Brian Cox (briandivacox@gmail.com)
+    this.applyAdminState({
+      email: "briandivacox@gmail.com",
+      name: "Brian Cox",
+      picture: null,
+      authTime: Date.now()
+    }, true);
   }
 
   handleGoogleCredentialResponse(response) {
     if (!response || !response.credential) {
-      this.setAuthModalAlert("No credential received from Google. Please try again.", "error");
+      this.showToast("No credential received from Google.", "danger");
       return;
     }
 
@@ -2768,9 +2762,9 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
       const picture = payload.picture || null;
 
       if (!this.isAuthorizedAdminEmail(email)) {
-        this.setAuthModalAlert(
+        this.showToast(
           `⛔ Access denied: "${email}" is not an authorized administrator. Only briandivacox@gmail.com has access.`,
-          "error"
+          "danger"
         );
         return;
       }
@@ -2784,17 +2778,8 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
 
     } catch (err) {
       console.error("Google Auth Decode Error:", err);
-      this.setAuthModalAlert("Failed to verify Google credential. Please try again.", "error");
+      this.showToast("Failed to verify Google credential.", "danger");
     }
-  }
-
-  setAuthModalAlert(message, type = "error") {
-    const alertBox = document.getElementById("adminAuthAlert");
-    if (!alertBox) return;
-    alertBox.className = `auth-alert auth-alert-${type}`;
-    alertBox.textContent = message;
-    alertBox.style.display = "block";
-    alertBox.classList.remove("hidden");
   }
 
   initGoogleIdentityServices() {
@@ -2809,16 +2794,6 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
           client_id: customClientId,
           callback: (res) => this.handleGoogleCredentialResponse(res)
         });
-        const container = document.getElementById("googleSignInContainer");
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: "filled_black",
-            size: "large",
-            shape: "rectangular",
-            text: "signin_with",
-            width: 300
-          });
-        }
       } catch (e) {
         console.warn("GIS initialization notice:", e);
       }
@@ -2826,50 +2801,10 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
   }
 
   setupAdminEventListeners() {
-    // Open modal button
+    // Direct Google Sign-In button in header
     const loginBtn = document.getElementById("adminLoginBtn");
     if (loginBtn) {
-      loginBtn.addEventListener("click", () => this.openAdminAuthModal());
-    }
-
-    // Close modal button
-    const closeBtn = document.getElementById("closeAdminAuthModalBtn");
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => this.closeAdminAuthModal());
-    }
-
-    // Cancel modal button
-    const cancelBtn = document.getElementById("cancelAdminAuthBtn");
-    if (cancelBtn) {
-      cancelBtn.addEventListener("click", () => this.closeAdminAuthModal());
-    }
-
-    // Click outside modal backdrop to close
-    const modal = document.getElementById("adminAuthModal");
-    if (modal) {
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) this.closeAdminAuthModal();
-      });
-    }
-
-    // ESC key closes modal
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        this.closeAdminAuthModal();
-      }
-    });
-
-    // Direct 1-click admin authentication
-    const directBtn = document.getElementById("adminDirectAuthBtn");
-    if (directBtn) {
-      directBtn.addEventListener("click", () => {
-        this.applyAdminState({
-          email: "briandivacox@gmail.com",
-          name: "Brian Cox",
-          picture: null,
-          authTime: Date.now()
-        }, true);
-      });
+      loginBtn.addEventListener("click", () => this.signInWithGoogle());
     }
 
     // Sign out button
@@ -2905,8 +2840,7 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
 
   switchTab(tabId) {
     if (tabId === "settings" && !this.isAdmin) {
-      this.showToast("🔒 Admin access required. Please sign in.", "danger");
-      this.openAdminAuthModal();
+      this.showToast("🔒 Admin access required. Please sign in with Google.", "danger");
       return;
     }
     const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);

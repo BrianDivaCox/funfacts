@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Google Identity Services (GIS) for Admin Authentication -->
+  <!-- Google Authentication Services (GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
   <link rel="stylesheet" href="styles.css">
@@ -34,15 +34,15 @@
         </div>
         <button class="btn btn-secondary btn-sm" id="syncBtn">🔄 Sync API</button>
         
-        <!-- Google Sign-In Admin Controls -->
-        <button class="btn btn-admin-auth btn-sm" id="adminLoginBtn" title="Admin Sign In with Google">
-          <svg class="google-icon" viewBox="0 0 24 24" width="16" height="16">
+        <!-- Direct Google Sign-In Admin Button -->
+        <button class="btn btn-admin-auth btn-sm" id="adminLoginBtn" title="Sign In with Google">
+          <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18">
             <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
             <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
             <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
             <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
           </svg>
-          <span>Admin Login</span>
+          <span>Sign In with Google</span>
         </button>
 
         <div class="admin-profile-pill hidden" id="adminProfilePill" style="display: none;">
@@ -291,56 +291,6 @@
       </div>
     </section>
 
-  </div>
-
-  <!-- Admin Authentication Modal -->
-  <div id="adminAuthModal" class="modal-overlay hidden" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <div class="modal-icon">🔐</div>
-          <div>
-            <h3 class="modal-title" id="adminModalTitle">FactVault Admin Access</h3>
-            <p class="modal-subtitle">Google Sign-In Protected Controls</p>
-          </div>
-        </div>
-        <button class="modal-close-btn" id="closeAdminAuthModalBtn" aria-label="Close dialog">&times;</button>
-      </div>
-
-      <div class="modal-body">
-        <div id="adminAuthAlert" class="auth-alert hidden" style="display: none;"></div>
-
-        <p class="auth-desc">
-          Gemini API configuration, Google Sheets sync endpoints, and automated midnight triggers are reserved for authorized administrators.
-        </p>
-
-        <div class="auth-target-box">
-          <div class="auth-target-label">Authorized Administrator Account:</div>
-          <div class="auth-target-email">
-            <span class="auth-email-dot"></span>
-            <strong>briandivacox@gmail.com</strong>
-          </div>
-        </div>
-
-        <!-- Google Sign-In Action -->
-        <div class="google-auth-section">
-          <button class="btn btn-google-direct" id="adminDirectAuthBtn">
-            <svg class="google-icon" viewBox="0 0 24 24" width="20" height="20">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-            </svg>
-            <span>Sign In with Authorized Google Account</span>
-          </button>
-        </div>
-        <div id="googleSignInContainer" class="google-signin-container"></div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="cancelAdminAuthBtn">Cancel</button>
-      </div>
-    </div>
   </div>
 
   <!-- Toast Notification Container -->
