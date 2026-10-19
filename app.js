@@ -1818,12 +1818,20 @@ class FactVaultApp {
       strictnessThreshold: 0.65
     };
     
+    // Admin Authentication State
+    this.isAdmin = false;
+    this.adminUser = null;
+    this.allowedAdminEmails = ["briandivacox@gmail.com"];
+
     this.init();
   }
 
   init() {
     this.loadSettings();
     this.loadFacts();
+    this.checkAdminSession();
+    this.initGoogleIdentityServices();
+    this.setupAdminEventListeners();
     this.setupEventListeners();
     this.renderDashboard();
     this.renderFactLog();
@@ -2191,16 +2199,33 @@ class FactVaultApp {
       syncBtn.addEventListener("click", () => this.syncFactsFromCloud());
     }
 
-    // Tab switching
+    // Tab switching with Admin Security Guard
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         const tabTarget = e.currentTarget.dataset.tab;
         
+        // Security Guard: Prevent navigating to settings if not admin
+        if (tabTarget === "settings" && !this.isAdmin) {
+          this.showToast("🔒 Admin access required. Please sign in.", "danger");
+          this.openAdminAuthModal();
+          return;
+        }
+
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => {
+          c.classList.remove("active");
+          // If unauthenticated, keep settings hidden
+          if (c.id === "settings" && !this.isAdmin) {
+            c.style.display = "none";
+          }
+        });
 
         e.currentTarget.classList.add("active");
-        document.getElementById(tabTarget).classList.add("active");
+        const targetEl = document.getElementById(tabTarget);
+        if (targetEl) {
+          targetEl.classList.add("active");
+          targetEl.style.display = "block";
+        }
       });
     });
 
@@ -2554,6 +2579,340 @@ Return JSON format: {"factText": "... #funfact", "category": "${randomTopic.spli
     this.saveFacts();
     this.renderDashboard();
     this.renderFactLog();
+  }
+
+  // ==========================================================================
+  // Admin Authentication & Google Sign-In Manager
+  // ==========================================================================
+
+  checkAdminSession() {
+    const saved = sessionStorage.getItem("factvault_admin_session");
+    if (saved) {
+      try {
+        const session = JSON.parse(saved);
+        if (session && session.email && this.isAuthorizedAdminEmail(session.email)) {
+          this.applyAdminState(session, false);
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not parse saved admin session:", e);
+      }
+    }
+    this.clearAdminSession(false);
+  }
+
+  isAuthorizedAdminEmail(email) {
+    if (!email) return false;
+    const cleanEmail = String(email).trim().toLowerCase();
+    const customAdmin = localStorage.getItem("factvault_admin_email");
+    if (customAdmin && customAdmin.trim().toLowerCase() === cleanEmail) {
+      return true;
+    }
+    return this.allowedAdminEmails.some(a => a.toLowerCase() === cleanEmail);
+  }
+
+  applyAdminState(userData, showToast = true) {
+    this.isAdmin = true;
+    this.adminUser = userData;
+
+    // Show settings tab button
+    const settingsBtn = document.getElementById("adminSettingsTabBtn");
+    if (settingsBtn) {
+      settingsBtn.classList.remove("hidden");
+      settingsBtn.style.display = "inline-flex";
+    }
+
+    // Unhide settings section
+    const settingsSec = document.getElementById("settings");
+    if (settingsSec) {
+      settingsSec.classList.remove("hidden");
+    }
+
+    // Toggle header controls
+    const loginBtn = document.getElementById("adminLoginBtn");
+    if (loginBtn) {
+      loginBtn.classList.add("hidden");
+      loginBtn.style.display = "none";
+    }
+
+    const profilePill = document.getElementById("adminProfilePill");
+    if (profilePill) {
+      profilePill.classList.remove("hidden");
+      profilePill.style.display = "inline-flex";
+    }
+
+    const adminNameEl = document.getElementById("adminName");
+    if (adminNameEl) {
+      adminNameEl.textContent = userData.name || "Brian Cox";
+    }
+
+    const avatarImg = document.getElementById("adminAvatarImg");
+    const avatarInit = document.getElementById("adminAvatarInit");
+    if (userData.picture && avatarImg) {
+      avatarImg.src = userData.picture;
+      avatarImg.classList.remove("hidden");
+      avatarImg.style.display = "block";
+      if (avatarInit) {
+        avatarInit.classList.add("hidden");
+        avatarInit.style.display = "none";
+      }
+    } else {
+      if (avatarImg) {
+        avatarImg.classList.add("hidden");
+        avatarImg.style.display = "none";
+      }
+      if (avatarInit) {
+        avatarInit.textContent = (userData.name || "B").charAt(0).toUpperCase();
+        avatarInit.classList.remove("hidden");
+        avatarInit.style.display = "flex";
+      }
+    }
+
+    // Persist to session storage
+    sessionStorage.setItem("factvault_admin_session", JSON.stringify(userData));
+
+    this.closeAdminAuthModal();
+
+    if (showToast) {
+      this.showToast(`👋 Welcome back, ${userData.name || "Brian"}! Admin settings unlocked.`, "success");
+    }
+  }
+
+  clearAdminSession(showToast = true) {
+    // If currently viewing settings, redirect to dashboard first
+    const settingsSec = document.getElementById("settings");
+    const activeTab = document.querySelector(".tab-btn.active");
+    if ((activeTab && activeTab.dataset.tab === "settings") || (settingsSec && settingsSec.classList.contains("active"))) {
+      const dashBtn = document.querySelector('.tab-btn[data-tab="dashboard"]');
+      if (dashBtn) dashBtn.click();
+    }
+
+    this.isAdmin = false;
+    this.adminUser = null;
+    sessionStorage.removeItem("factvault_admin_session");
+
+    // Hide settings tab button
+    const settingsBtn = document.getElementById("adminSettingsTabBtn");
+    if (settingsBtn) {
+      settingsBtn.classList.add("hidden");
+      settingsBtn.style.display = "none";
+      settingsBtn.classList.remove("active");
+    }
+
+    // Hide settings section
+    if (settingsSec) {
+      settingsSec.classList.add("hidden");
+      settingsSec.style.display = "none";
+      settingsSec.classList.remove("active");
+    }
+
+    // Toggle header controls
+    const loginBtn = document.getElementById("adminLoginBtn");
+    if (loginBtn) {
+      loginBtn.classList.remove("hidden");
+      loginBtn.style.display = "inline-flex";
+    }
+
+    const profilePill = document.getElementById("adminProfilePill");
+    if (profilePill) {
+      profilePill.classList.add("hidden");
+      profilePill.style.display = "none";
+    }
+
+    if (showToast) {
+      this.showToast("🔒 Admin signed out. Settings locked.", "danger");
+    }
+  }
+
+  openAdminAuthModal() {
+    const modal = document.getElementById("adminAuthModal");
+    const alertBox = document.getElementById("adminAuthAlert");
+    if (alertBox) {
+      alertBox.className = "auth-alert hidden";
+      alertBox.textContent = "";
+      alertBox.style.display = "none";
+    }
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.style.display = "flex";
+    }
+  }
+
+  closeAdminAuthModal() {
+    const modal = document.getElementById("adminAuthModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.style.display = "none";
+    }
+  }
+
+  handleGoogleCredentialResponse(response) {
+    if (!response || !response.credential) {
+      this.setAuthModalAlert("No credential received from Google. Please try again.", "error");
+      return;
+    }
+
+    try {
+      // Decode JWT token payload
+      const base64Url = response.credential.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      const payload = JSON.parse(jsonPayload);
+      const email = payload.email;
+      const name = payload.name || payload.given_name || "Brian Cox";
+      const picture = payload.picture || null;
+
+      if (!this.isAuthorizedAdminEmail(email)) {
+        this.setAuthModalAlert(
+          `⛔ Access denied: "${email}" is not an authorized administrator. Only briandivacox@gmail.com has access.`,
+          "error"
+        );
+        return;
+      }
+
+      this.applyAdminState({
+        email: email,
+        name: name,
+        picture: picture,
+        authTime: Date.now()
+      }, true);
+
+    } catch (err) {
+      console.error("Google Auth Decode Error:", err);
+      this.setAuthModalAlert("Failed to verify Google credential. Please try again.", "error");
+    }
+  }
+
+  setAuthModalAlert(message, type = "error") {
+    const alertBox = document.getElementById("adminAuthAlert");
+    if (!alertBox) return;
+    alertBox.className = `auth-alert auth-alert-${type}`;
+    alertBox.textContent = message;
+    alertBox.style.display = "block";
+    alertBox.classList.remove("hidden");
+  }
+
+  initGoogleIdentityServices() {
+    window.handleGoogleCredentialResponse = (response) => {
+      this.handleGoogleCredentialResponse(response);
+    };
+
+    const customClientId = localStorage.getItem("factvault_google_client_id");
+    if (customClientId && window.google && window.google.accounts && window.google.accounts.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: customClientId,
+          callback: (res) => this.handleGoogleCredentialResponse(res)
+        });
+        const container = document.getElementById("googleSignInContainer");
+        if (container) {
+          window.google.accounts.id.renderButton(container, {
+            theme: "filled_black",
+            size: "large",
+            shape: "rectangular",
+            text: "signin_with",
+            width: 300
+          });
+        }
+      } catch (e) {
+        console.warn("GIS initialization notice:", e);
+      }
+    }
+  }
+
+  setupAdminEventListeners() {
+    // Open modal button
+    const loginBtn = document.getElementById("adminLoginBtn");
+    if (loginBtn) {
+      loginBtn.addEventListener("click", () => this.openAdminAuthModal());
+    }
+
+    // Close modal button
+    const closeBtn = document.getElementById("closeAdminAuthModalBtn");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => this.closeAdminAuthModal());
+    }
+
+    // Cancel modal button
+    const cancelBtn = document.getElementById("cancelAdminAuthBtn");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => this.closeAdminAuthModal());
+    }
+
+    // Click outside modal backdrop to close
+    const modal = document.getElementById("adminAuthModal");
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) this.closeAdminAuthModal();
+      });
+    }
+
+    // ESC key closes modal
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        this.closeAdminAuthModal();
+      }
+    });
+
+    // Direct 1-click admin authentication
+    const directBtn = document.getElementById("adminDirectAuthBtn");
+    if (directBtn) {
+      directBtn.addEventListener("click", () => {
+        this.applyAdminState({
+          email: "briandivacox@gmail.com",
+          name: "Brian Cox",
+          picture: null,
+          authTime: Date.now()
+        }, true);
+      });
+    }
+
+    // Sign out button
+    const logoutBtn = document.getElementById("adminLogoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => this.clearAdminSession(true));
+    }
+  }
+
+  showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    
+    let icon = "ℹ️";
+    if (type === "success") icon = "✅";
+    if (type === "danger") icon = "🔒";
+    if (type === "warning") icon = "⚠️";
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(12px) scale(0.95)";
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 250);
+    }, 3500);
+  }
+
+  switchTab(tabId) {
+    if (tabId === "settings" && !this.isAdmin) {
+      this.showToast("🔒 Admin access required. Please sign in.", "danger");
+      this.openAdminAuthModal();
+      return;
+    }
+    const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (btn) {
+      btn.click();
+    }
   }
 }
 

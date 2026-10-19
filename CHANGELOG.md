@@ -2,6 +2,16 @@
 
 All notable changes to the Fun Fact Tracker project will be documented in this file.
 
+## [5.9.0] - 2026-10-18
+
+### Added & Enhanced
+- Protected Settings tab behind Google Sign-In admin authentication.
+- Added sleek Google Sign-In button to website header.
+- Added Admin Profile Pill with one-click sign-out control.
+- Guarded configuration routes from unauthorized public visitor access.
+- Added authorized administrator verification for Brian Cox.
+- Optimized responsive mobile layouts with zero horizontal scroll.
+
 ## [5.8.0] - 2026-10-13
 
 ### Fixed & Enhanced
