@@ -3590,5 +3590,80 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-SC1mZFVsQUI2SDVtQ3JmTg"
+  },
+  {
+    "id": "FACT-1792655400383",
+    "date": "2026-10-22T07:50:00.383Z",
+    "factText": "🔴 Mars is home to Olympus Mons, a volcano nearly three times the height of Mount Everest! 🌋✨ #funfact",
+    "category": "Mars & Planetary Exploration",
+    "keywords": [
+      "Mars",
+      "Olympus Mons",
+      "volcano"
+    ],
+    "similarityScore": 0.382,
+    "status": "Posted",
+    "keepNoteId": "GTASK-bERMV2RpMGlVSnJIS1NUMg",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1792741798196",
+    "date": "2026-10-23T07:49:58.197Z",
+    "factText": "🎻 Stradivarius violins sound so unique because the 18th-century wood was treated with special minerals to protect it from worms! 🪱✨ #funfact",
+    "category": "Music Theory & Instrument Origins",
+    "keywords": [
+      "violins",
+      "Stradivarius",
+      "instruments"
+    ],
+    "similarityScore": 0.348,
+    "status": "Posted",
+    "keepNoteId": "GTASK-MExvSVJ4YmZZbjJBWmJaZA",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1792758930461",
+    "date": "2026-10-23T12:35:30.461Z",
+    "factText": "🦴 Ancient Stegosaurus had a brain the size of a hot dog! Despite its massive body, this plated dinosaur wasn't the sharpest beast in prehistoric times. 🌭🦖 #funfact",
+    "category": "Paleontology",
+    "keywords": [
+      "Stegosaurus",
+      "dinosaur",
+      "brain"
+    ],
+    "similarityScore": 0.359,
+    "status": "Posted",
+    "keepNoteId": "GTASK-aW1JZnVzSkxoTlh5SFFOTw",
+    "source": "GitHub Actions Midnight Automation"
+  },
+  {
+    "id": "FACT-1792828212726",
+    "date": "2026-10-24T07:50:12.727Z",
+    "factText": "🏛️ Ancient Romans didn't use numbers for months; they named them after gods and emperors, and January was named after Janus, the two-faced god of beginnings! 🕰️ #funfact",
+    "category": "Ancient Calendars & Timekeeping",
+    "keywords": [
+      "Ancient Rome",
+      "Months",
+      "Janus"
+    ],
+    "similarityScore": 0.359,
+    "status": "Posted",
+    "keepNoteId": "GTASK-TDQ4WVNCaHhkNjVMUUszQQ",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1792843057480",
+    "date": "2026-10-24T11:57:37.480Z",
+    "factText": "👅 Your tongue has a unique print just like your fingers! No two people share the exact same tongue pattern. 🔍 #funfact",
+    "category": "Human Senses & Perception",
+    "keywords": [
+      "tongue print",
+      "human senses",
+      "unique anatomy"
+    ],
+    "similarityScore": 0.358,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-Q1FKcmo0UmZGa2dNeVVDSg"
   }
 ]
