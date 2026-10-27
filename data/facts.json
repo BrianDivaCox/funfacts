@@ -3695,5 +3695,35 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-UERLeTVWMHJLQnJiRWJGQw"
+  },
+  {
+    "id": "FACT-1793001033044",
+    "date": "2026-10-26T07:50:33.044Z",
+    "factText": " Vikings used special sunstones to navigate the open ocean even on cloudy days! ☀️🧭 #funfact",
+    "category": "Viking Age & Norse Myths",
+    "keywords": [
+      "vikings",
+      "navigation",
+      "sunstone"
+    ],
+    "similarityScore": 0.384,
+    "status": "Posted",
+    "keepNoteId": "GTASK-V3VwSTdzMWV4QWFfdzJmbA",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1793106467209",
+    "date": "2026-10-27T13:07:47.209Z",
+    "factText": "Ancient Egyptians trained baboons to act as police officers and catch thieves in busy markets! 🐒👮 #funfact",
+    "category": "Ancient History & Archaeology",
+    "keywords": [
+      "ancient egypt",
+      "baboons",
+      "archaeology"
+    ],
+    "similarityScore": 0.421,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-Yk9JX1VXYUo3Nmt0T01reQ"
   }
 ]
