@@ -3755,5 +3755,51 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-T1I1MFJjVkRIZ2d3ZlVHag"
+  },
+  {
+    "id": "FACT-1793346839118",
+    "date": "2026-10-30T07:53:59.118Z",
+    "factText": "In 1923, a jockey named Frank Hayes won a horse race despite dying of a heart attack mid-race! 🐎🏁 He remains the only dead jockey to win. 💀 #funfact",
+    "category": "Sports World Records & Oddities",
+    "keywords": [
+      "horse racing",
+      "jockey",
+      "world record"
+    ],
+    "similarityScore": 0.352,
+    "status": "Posted",
+    "keepNoteId": "GTASK-QkNYR0dfT082U2ItTG5FLQ",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1793433177422",
+    "date": "2026-10-31T07:52:57.422Z",
+    "factText": "🏛️ The earliest Roman calendar had only 10 months! Winter was an uncounted, monthless gap between years. ❄️ #funfact",
+    "category": "Ancient History",
+    "keywords": [
+      "Roman calendar",
+      "ancient Rome",
+      "timekeeping",
+      "calendar history"
+    ],
+    "similarityScore": 0.386,
+    "status": "Posted",
+    "keepNoteId": "GTASK-VVJTbEFCNG9FT2hTeTVGZQ",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1793453683286",
+    "date": "2026-10-31T13:34:43.286Z",
+    "factText": "🐈 Ancient Egyptians loved cats so much that mourning a pet cat meant shaving off your eyebrows as a sign of deep grief! 👑 #funfact",
+    "category": "Ancient Egypt",
+    "keywords": [
+      "Ancient Egypt",
+      "cats",
+      "pharaohs"
+    ],
+    "similarityScore": 0.403,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-REVxMmZhNHlaSEhNVWxmMw"
   }
 ]
