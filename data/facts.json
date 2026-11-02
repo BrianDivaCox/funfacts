@@ -3816,5 +3816,45 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-U0dpRkRTMXRkeGlaQXhhNQ"
+  },
+  {
+    "id": "FACT-1793609648765",
+    "date": "2026-11-02T08:54:08.765Z",
+    "factText": "Ancient Romans flooded the Colosseum with water to stage real mock sea battles using full-sized warships! 🏟️🌊 #funfact",
+    "category": "Ancient",
+    "keywords": [
+      "ancient",
+      "roman",
+      "flood",
+      "colosseum",
+      "water",
+      "stage",
+      "real",
+      "mock",
+      "sea",
+      "battl",
+      "using",
+      "fullsiz",
+      "warship"
+    ],
+    "similarityScore": 0.441,
+    "status": "Posted",
+    "keepNoteId": "GTASK-S1RKenVxN20waWVmY0ludA",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1793638766459",
+    "date": "2026-11-02T16:59:26.459Z",
+    "factText": "🧠 The Troxler Effect causes stare-at-the-center illusions to make stationary background colors completely vanish from your vision! 👁️✨ #funfact",
+    "category": "Psychology & Optical Illusions",
+    "keywords": [
+      "optical illusion",
+      "perception",
+      "troxler effect"
+    ],
+    "similarityScore": 0.341,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-TTVGX2NvSk5jRndKNWpEWQ"
   }
 ]
