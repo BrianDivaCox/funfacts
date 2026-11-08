@@ -3856,5 +3856,82 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-TTVGX2NvSk5jRndKNWpEWQ"
+  },
+  {
+    "id": "FACT-1793782235298",
+    "date": "2026-11-04T08:50:35.299Z",
+    "factText": "🦟 Dragonflies are the world’s most successful hunters with a 95% kill rate—nearly double that of a lion! 🎯 #funfact",
+    "category": "Entomology",
+    "keywords": [
+      "dragonfly",
+      "insects",
+      "hunting",
+      "predator"
+    ],
+    "similarityScore": 0.361,
+    "status": "Posted",
+    "keepNoteId": "GTASK-VVJrV2QzeHBxX3p0RG5XVg",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1793955099132",
+    "date": "2026-11-06T08:51:39.132Z",
+    "factText": "Trillions of tiny ghost particles called neutrinos pass right through your body every single second! 👻✨ #funfact",
+    "category": "Quantum Physics & Particle Science",
+    "keywords": [
+      "neutrinos",
+      "particle physics",
+      "sun"
+    ],
+    "similarityScore": 0.366,
+    "status": "Posted",
+    "keepNoteId": "GTASK-dlRYMmMxamctZ2FQdnNGRA",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1794041405380",
+    "date": "2026-11-07T08:50:05.380Z",
+    "factText": "Bluetooth is named after Viking King Harald Bluetooth! 📱 The iconic logo actually combines his initials written in ancient Norse runes. ⚔️ #funfact",
+    "category": "Viking",
+    "keywords": [
+      "Bluetooth",
+      "Vikings",
+      "Harald Bluetooth",
+      "Norse Runes"
+    ],
+    "similarityScore": 0.331,
+    "status": "Posted",
+    "keepNoteId": "GTASK-TVdtanVqcWNlWHRpa1U0SA",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1794127820675",
+    "date": "2026-11-08T08:50:20.675Z",
+    "factText": "Otters hold hands while sleeping so they don't drift apart! 🦦💤 Talk about the ultimate nap buddy goals! ✨ #funfact",
+    "category": "Sleep Science",
+    "keywords": [
+      "otters",
+      "sleep",
+      "animals"
+    ],
+    "similarityScore": 0.416,
+    "status": "Posted",
+    "keepNoteId": "GTASK-d3I0OHRfV1FZeFFhQ1lBMg",
+    "source": "Midnight Automated Trigger"
+  },
+  {
+    "id": "FACT-1794147272946",
+    "date": "2026-11-08T14:14:32.946Z",
+    "factText": "Thor's famous hammer Mjölnir accidentally had a short handle because a mischievous dwarf interrupted the blacksmith's magic during forging! 🔨⚡ #funfact",
+    "category": "Viking Age & Norse Myths",
+    "keywords": [
+      "Thor",
+      "Mjölnir",
+      "Norse mythology"
+    ],
+    "similarityScore": 0.336,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-T1VmT1RCczJyZmFndGdzWQ"
   }
 ]
