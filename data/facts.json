@@ -3933,5 +3933,20 @@
     "status": "Posted",
     "source": "GitHub Actions Midnight Automation",
     "keepNoteId": "GTASK-T1VmT1RCczJyZmFndGdzWQ"
+  },
+  {
+    "id": "FACT-1794245042145",
+    "date": "2026-11-09T17:24:02.145Z",
+    "factText": "🏛️ Ancient Greek voters used pottery shards instead of paper ballots to banish unpopular politicians from their city for 10 years! 🏺 #funfact",
+    "category": "Ancient History & Archaeology",
+    "keywords": [
+      "Ancient Greece",
+      "democracy",
+      "ostracism"
+    ],
+    "similarityScore": 0.388,
+    "status": "Posted",
+    "source": "GitHub Actions Midnight Automation",
+    "keepNoteId": "GTASK-bjVMZGtEem44dXhfMzl2NQ"
   }
 ]
